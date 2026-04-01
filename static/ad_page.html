@@ -15,6 +15,7 @@
             padding-top: 2rem;
             overflow-x: hidden;
         }
+        body.scroll-locked { overflow-y: hidden; }
         .container { text-align: center; padding: 2rem; max-width: 500px; width: 90%; }
         .movie-icon { font-size: 3rem; margin-bottom: 12px; }
         .title { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffd700; }
@@ -37,13 +38,14 @@
             border-radius: 3px; transition: width 1s linear; width: 0%;
         }
         .status-text { font-size: 0.8rem; color: #64748b; }
-        .ad-space {
-            margin: 1.5rem auto; padding: 1.5rem; min-height: 120px;
-            background: rgba(255,255,255,0.03); border-radius: 14px;
-            border: 1px dashed rgba(255,255,255,0.08);
-            display: flex; align-items: center; justify-content: center;
-            color: #475569; font-size: 0.85rem; max-width: 500px; width: 90%;
+        .scroll-down-btn {
+            display: none; padding: 12px 24px; font-size: 1rem;
+            background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; cursor: pointer; text-decoration: none;
+            margin: 1rem auto; transition: background 0.3s;
         }
+        .scroll-down-btn:hover { background: rgba(255,255,255,0.2); }
+        .scroll-down-btn.show { display: inline-block; animation: bounceIn 0.6s; }
         .download-btn {
             display: none; padding: 18px 56px; font-size: 1.1rem;
             background: linear-gradient(135deg, #06b6d4, #6366f1);
@@ -118,7 +120,7 @@
         .footer { margin-top: 2rem; font-size: 0.75rem; color: #475569; padding-bottom: 2rem; }
     </style>
 </head>
-<body>
+<body class="scroll-locked">
     <div id="loading">
         <div class="spinner"></div>
         <p>Fetching link...</p>
@@ -138,20 +140,9 @@
             <p class="status-text" id="statusText">⏳ Preparing your download link...</p>
         </div>
         
-        <!-- ========================================== -->
-        <!-- AD SPACE: PASTE YOUR AD SCRIPT CODES BELOW -->
-        <!-- ========================================== -->
-        <div class="ad-space" id="adSpace">
-            <!-- Example script for Monetag / Popunder -->
-            <!-- <script src='//pl22345678.pubrevenuegate.com/eb/bd/fd/ebBDFDA233.js'></script> -->
-            
-            Advertisement Space
-        </div>
-        <!-- ========================================== -->
-        
-        <a href="#" class="download-btn" id="downloadBtn">
-            📥 <span id="btnLabel">Download</span>
-        </a>
+        <button id="scrollDownBtn" class="scroll-down-btn">
+            👇 Scroll down to continue
+        </button>
     </div>
 
     <div class="info-container" id="infoContent" style="display: none;">
@@ -202,6 +193,12 @@
             </p>
         </div>
         
+        <div style="text-align: center; margin: 40px 0;">
+            <a href="#" class="download-btn" id="downloadBtn">
+                📥 <span id="btnLabel">Download</span>
+            </a>
+        </div>
+        
         <div class="footer" style="text-align: center;">MovieZone • Powered by MovieBot</div>
     </div>
 
@@ -236,6 +233,7 @@
 
                 // If ads are disabled, redirect instantly
                 if (data.ads_enabled === false) {
+                    document.body.classList.remove('scroll-locked');
                     window.location.href = data.target_link;
                     return;
                 }
@@ -250,6 +248,11 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
                 document.getElementById('infoContent').style.display = 'block';
+
+                // Event Listener for Scroll Down Button
+                document.getElementById('scrollDownBtn').addEventListener('click', () => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                });
 
                 // Start Timer
                 startTimer();
@@ -277,6 +280,8 @@
                     timer.textContent = '✅';
                     statusText.textContent = '🎉 Your download is ready!';
                     btn.classList.add('show');
+                    document.body.classList.remove('scroll-locked');
+                    document.getElementById('scrollDownBtn').classList.add('show');
                 }
             }, 1000);
         }
