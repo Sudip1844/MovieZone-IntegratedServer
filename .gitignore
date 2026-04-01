@@ -45,3 +45,7 @@ Thumbs.db
 *.tmp
 *.temp
 *.bak
+
+# AI agent folders
+.gsd/
+.gemini/
