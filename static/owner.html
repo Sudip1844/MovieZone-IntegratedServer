@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieZone Owner Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.8);
+            --bg-input: rgba(30, 41, 59, 0.8);
+            --border: rgba(99, 102, 241, 0.2);
+            --border-focus: rgba(99, 102, 241, 0.6);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --cyan: #06b6d4;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
+        }
+
+        /* Login */
+        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .login-card {
+            background: var(--bg-card); backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 48px 40px; width: 100%; max-width: 420px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+        }
+        .login-card h2 {
+            text-align: center; font-size: 1.6rem; font-weight: 700;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 32px;
+        }
+        .pass-wrap { position: relative; }
+        .pass-wrap input { padding-right: 44px; }
+        .eye-btn {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-secondary); cursor: pointer;
+            font-size: 1.1rem; padding: 4px;
+        }
+        .eye-btn:hover { color: var(--text-primary); }
+
+        /* Dashboard */
+        #dashboard { display: none; }
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px; background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+        }
+        .topbar h1 {
+            font-size: 1.2rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .role-badge {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #000; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex; gap: 4px; background: var(--bg-secondary);
+            border-radius: 14px; padding: 4px; margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1; padding: 10px 16px; border: none; border-radius: 10px;
+            background: transparent; color: var(--text-secondary);
+            cursor: pointer; font-size: 0.85rem; font-weight: 500;
+            white-space: nowrap; transition: all 0.2s; font-family: inherit;
+            text-align: center;
+        }
+        .tab-btn:hover { color: var(--text-primary); background: rgba(99,102,241,0.1); }
+        .tab-btn.active {
+            background: var(--accent); color: #fff;
+            box-shadow: 0 4px 15px rgba(99,102,241,0.4);
+        }
+        .tab-panel { display: none; animation: fadeIn 0.3s ease; }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Form */
+        label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+        input, select, textarea {
+            width: 100%; padding: 12px 16px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--bg-input);
+            color: var(--text-primary); font-size: 0.9rem; font-family: inherit;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* Chip selectors */
+        .chip-container { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            padding: 10px 18px; border-radius: 20px; font-size: 0.95rem;
+            border: 1px solid var(--border); background: var(--bg-input);
+            color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+            font-family: inherit; user-select: none;
+        }
+        .chip:hover { border-color: var(--accent); color: var(--text-primary); }
+        .chip.selected {
+            background: rgba(99,102,241,0.2); border-color: var(--accent);
+            color: var(--accent-hover); font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 10px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            font-family: inherit; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #4f46e5); color: #fff; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), #d97706); color: #000; }
+        .btn-success { background: linear-gradient(135deg, var(--success), #16a34a); color: #fff; }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: #fff; }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
+        .btn-outline:hover { background: rgba(99,102,241,0.1); border-color: var(--accent); }
+        .btn-block { width: 100%; justify-content: center; }
+
+        /* Card */
+        .card {
+            background: var(--bg-card); backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+        }
+        .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; }
+
+        /* Layouts */
+        .narrow-content { max-width: 900px; margin: 0 auto; }
+        .wide-content { max-width: 1400px; margin: 0 auto; }
+        .main-content { padding: 24px; }
+
+        /* Movie type container */
+        .type-selector {
+            background: rgba(99,102,241,0.08); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px; margin-bottom: 20px;
+        }
+        .type-selector label { color: var(--accent-hover); font-weight: 600; margin-bottom: 10px; }
+
+        /* Dynamic fields */
+        .dynamic-fields { display: none; }
+        .dynamic-fields.show { display: block; }
+
+        /* Episode Row */
+        .episode-row {
+            display: grid; grid-template-columns: 50px 1fr 1fr 1fr 40px;
+            gap: 8px; align-items: center; margin-bottom: 8px;
+            padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px;
+        }
+        .ep-num { font-weight: 700; color: var(--cyan); text-align: center; }
+
+        /* Toggle */
+        .toggle { display: flex; align-items: center; gap: 10px; }
+        .toggle-switch {
+            width: 44px; height: 24px; border-radius: 12px;
+            background: #4b5563; cursor: pointer; position: relative; transition: background 0.2s;
+        }
+        .toggle-switch.on { background: var(--success); }
+        .toggle-switch::after {
+            content: ''; width: 18px; height: 18px; border-radius: 50%;
+            background: #fff; position: absolute; top: 3px; left: 3px; transition: transform 0.2s;
+        }
+        .toggle-switch.on::after { transform: translateX(20px); }
+
+        /* Generated links */
+        .generated-link {
+            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+            border-radius: 12px; padding: 16px; margin-top: 16px; display: none;
+        }
+        .generated-link.show { display: block; }
+        .link-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: var(--bg-input); padding: 8px 14px; border-radius: 8px;
+            font-family: monospace; font-size: 0.8rem; word-break: break-all; margin: 6px 0;
+        }
+
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--cyan); }
+        .stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Toolbar */
+        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .toolbar input { max-width: 300px; }
+        .toolbar select { max-width: 180px; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: rgba(99,102,241,0.1); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; padding: 12px 16px; text-align: left; white-space: nowrap; }
+        td { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.04); font-size: 0.85rem; }
+        tr:hover td { background: rgba(99,102,241,0.04); }
+        .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge-approved { background: rgba(34,197,94,0.15); color: var(--success); }
+        .badge-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .badge-rejected { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; padding: 14px 24px; border-radius: 12px; font-size: 0.9rem; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { background: var(--success); color: #000; }
+        .toast-error { background: var(--danger); color: #fff; }
+
+        .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .actions { display: flex; gap: 6px; }
+
+        /* Pending card */
+        .pending-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        .pending-info { flex: 1; min-width: 200px; }
+        .pending-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Detail preview (like telegram bot post) */
+        .detail-preview {
+            background: rgba(0,0,0,0.3); border-left: 3px solid var(--accent);
+            border-radius: 0 10px 10px 0; padding: 16px; margin: 12px 0;
+            font-size: 0.85rem; line-height: 1.8;
+        }
+        .detail-preview .label { color: var(--text-secondary); }
+        .detail-preview .value { color: var(--text-primary); font-weight: 500; }
+        .detail-preview .link-val { color: var(--cyan); word-break: break-all; }
+
+        .copy-icon { cursor: pointer; background: none; border: none; font-size: 0.9rem; color: var(--text-secondary); padding: 2px 6px; }
+        .copy-icon:hover { color: var(--text-primary); }
+
+        /* Custom Dropdown */
+        .multi-dropdown { position: relative; width: 100%; margin-bottom: 2px; }
+        .multi-dropdown-selected {
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            min-height: 48px; color: var(--text-primary);
+        }
+        .multi-dropdown-selected:hover { border-color: rgba(255,255,255,0.2); }
+        .multi-dropdown-menu {
+            display: none; position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 10px; padding: 16px; margin-top: 4px; z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 250px; overflow-y: auto;
+        }
+        .multi-dropdown.open .multi-dropdown-menu { display: block; }
+        .multi-dropdown-items { display: flex; flex-wrap: wrap; gap: 8px; }
+        .preview-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; margin-right: 10px; }
+        .preview-chip { background: rgba(99,102,241,0.2); border: 1px solid var(--accent); color: var(--accent-hover); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .preview-placeholder { color: var(--text-secondary); font-size: 0.9rem; }
+
+        @media (max-width: 768px) {
+            .form-row, .form-row-3 { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; }
+            .toolbar input, .toolbar select { max-width: 100%; }
+            .episode-row { grid-template-columns: 50px 1fr 40px; }
+            .episode-row input:nth-child(3), .episode-row input:nth-child(4) { display: none; }
+            .tabs { flex-wrap: wrap; }
+            .tab-btn { flex: 1 1 45%; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+    <div class="login-card">
+        <h2>👑 Owner Login</h2>
+        <div class="form-group"><label>Admin ID</label><input type="text" id="loginId" placeholder="Enter your ID"></div>
+        <div class="form-group"><label>Password</label>
+            <div class="pass-wrap">
+                <input type="password" id="loginPass" placeholder="Enter password">
+                <button class="eye-btn" onclick="togglePassVis('loginPass', this)">👁️</button>
+            </div>
+        </div>
+        <button class="btn btn-warning btn-block" onclick="doLogin()" style="margin-top:8px">Login</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+    <div class="topbar">
+        <h1>🎬 MovieZone Owner Panel</h1>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span class="role-badge" id="roleBadge">OWNER</span>
+            <button class="btn btn-sm btn-outline" onclick="doLogout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="wide-content">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="statMovies">0</div><div class="stat-label">Total Movies</div></div>
+                <div class="stat-card"><div class="stat-value" id="statViews">0</div><div class="stat-label">Total Views</div></div>
+                <div class="stat-card"><div class="stat-value" id="statPending">0</div><div class="stat-label">Pending</div></div>
+                <div class="stat-card"><div class="stat-value" id="statAdmins">0</div><div class="stat-label">Admins</div></div>
+            </div>
+
+            <!-- Tabs (equal width) -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('addMovie',this)">➕ Add Movie</button>
+                <button class="tab-btn" onclick="switchTab('allMovies',this)">📋 All Movies</button>
+                <button class="tab-btn" onclick="switchTab('pending',this)">⏳ Pending</button>
+                <button class="tab-btn" onclick="switchTab('admins',this)">👥 Admins</button>
+            </div>
+        </div>
+
+        <!-- TAB: ADD MOVIE (narrow) -->
+        <div class="tab-panel active" id="tab-addMovie">
+            <div class="wide-content">
+            <div class="card">
+                <h3>➕ Add New Movie</h3>
+                <!-- START IMAGE UPLOAD -->
+                <div class="form-group">
+                    <label>Movie Thumbnail (Upload Image) *</label>
+                    <input type="file" id="movieThumbnail" accept="image/*" onchange="previewThumbnail(this)">
+                    <div id="thumbnailPreviewContainer" style="margin-top: 10px; display: none;">
+                        <img id="thumbnailPreview" src="" alt="Thumbnail Preview" style="max-width: 200px; max-height: 250px; border-radius: 8px; border: 1px solid var(--border);">
+                    </div>
+                </div>
+                <!-- END IMAGE UPLOAD -->
+                <div class="form-group"><label>Movie Title *</label><input type="text" id="movieTitle" placeholder="e.g. Inception (2010)"></div>
+
+                <div class="type-selector">
+                    <label>Download Type</label>
+                    <select id="downloadType" onchange="onTypeChange()">
+                        <option value="single">Single Link</option>
+                        <option value="quality">Quality (480p/720p/1080p)</option>
+                        <option value="episode">Episode Series</option>
+                        <option value="zip">Zip Download</option>
+                    </select>
+                </div>
+
+                <!-- Single Link -->
+                <div class="dynamic-fields show" id="fields-single">
+                    <div class="form-group"><label>Download Link (Original URL) *</label><input type="text" id="singleLink" placeholder="https://..."></div>
+                </div>
+
+                <!-- Quality -->
+                <div class="dynamic-fields" id="fields-quality">
+                    <div class="form-row-3">
+                        <div class="form-group"><label>480p Link</label><input type="text" id="q480" placeholder="https://..."></div>
+                        <div class="form-group"><label>720p Link</label><input type="text" id="q720" placeholder="https://..."></div>
+                        <div class="form-group"><label>1080p Link</label><input type="text" id="q1080" placeholder="https://..."></div>
+                    </div>
+                </div>
+
+                <!-- Episode -->
+                <div class="dynamic-fields" id="fields-episode">
+                    <div class="form-group"><label>Start From Episode</label><input type="number" id="epStart" value="1" min="1" style="max-width:150px;" oninput="renumberEpisodes()"></div>
+                    <div id="episodeRows"></div>
+                    <button class="btn btn-sm btn-outline" onclick="addEpisodeRow()" style="margin:10px 0">+ Add Episode</button>
+                </div>
+
+                <!-- Zip -->
+                <div class="dynamic-fields" id="fields-zip">
+                    <div class="form-row">
+                        <div class="form-group"><label>From Episode</label><input type="number" id="zipFrom" min="1" placeholder="1"></div>
+                        <div class="form-group"><label>To Episode</label><input type="number" id="zipTo" min="1" placeholder="10"></div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group"><label>480p Zip Link</label><input type="text" id="zip480" placeholder="https://..."></div>
+                        <div class="form-group"><label>720p Zip Link</label><input type="text" id="zip720" placeholder="https://..."></div>
+                        <div class="form-group"><label>1080p Zip Link</label><input type="text" id="zip1080" placeholder="https://..."></div>
+                    </div>
+                </div>
+
+                <hr style="border-color:var(--border);margin:20px 0;">
+
+                <div class="form-group"><label>Categories</label><div class="chip-container" id="categoriesContainer"></div></div>
+                <div class="form-group"><label>Languages</label><div class="chip-container" id="languagesContainer"></div></div>
+                <div class="form-row-3">
+                    <div class="form-group"><label>Release Year</label><input type="text" id="releaseYear" placeholder="e.g. 2024"></div>
+                    <div class="form-group"><label>Runtime</label><input type="text" id="runtime" placeholder="e.g. 2h 28m"></div>
+                    <div class="form-group"><label>IMDb Rating</label><input type="text" id="imdbRating" placeholder="e.g. 8.8"></div>
+                </div>
+                <div class="toggle form-group"><span>Ads Enabled</span><div class="toggle-switch on" id="adsToggle" onclick="this.classList.toggle('on')"></div></div>
+
+                <button class="btn btn-warning btn-block" id="addBtn" onclick="addMovie()" style="font-size:1rem;padding:14px;" disabled>➕ Add Movie (goes to review queue)</button>
+
+                <div class="generated-link" id="addResult">
+                    <strong>✅ Short Links Generated!</strong>
+                    <div id="addLinksContainer"></div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- TAB: ALL MOVIES (wide) -->
+        <div class="tab-panel" id="tab-allMovies">
+            <div class="wide-content">
+            <div class="card">
+                <h3>📋 All Movies (Approved)</h3>
+                <div class="toolbar">
+                    <input type="text" id="searchInput" placeholder="🔍 Search movies..." oninput="filterMovies()">
+                    <select id="sortSelect" onchange="filterMovies()">
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="name_asc">Name A-Z</option>
+                        <option value="name_desc">Name Z-A</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" onclick="loadMovies()">🔄 Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Added By</th><th>Views</th><th>Short URL</th><th>Actions</th></tr></thead>
+                        <tbody id="moviesTable"><tr><td colspan="7" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- TAB: PENDING -->
+        <div class="tab-panel" id="tab-pending">
+            <div class="wide-content">
+            <div class="card">
+                <h3>⏳ Pending Movies</h3>
+                <div id="pendingList"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+            </div>
+            </div>
+        </div>
+
+        <!-- TAB: ADMINS -->
+        <div class="tab-panel" id="tab-admins">
+            <div class="wide-content">
+            <div class="card">
+                <h3>👥 Admin Accounts</h3>
+                <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <input type="text" id="newAdminId" placeholder="Admin ID" style="max-width:180px;">
+                    <input type="text" id="newAdminPass" placeholder="Password" style="max-width:180px;">
+                    <input type="text" id="newAdminName" placeholder="Display Name" style="max-width:180px;">
+                    <button class="btn btn-sm btn-success" onclick="createAdmin()">+ Create Admin</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Admin ID</th><th>Password</th><th>Display Name</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+                        <tbody id="adminsTable"><tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MOVIE MODAL -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3>✏️ Edit Movie</h3>
+        <input type="hidden" id="editId">
+        <input type="hidden" id="editType">
+        <div class="form-group"><label>Title</label><input type="text" id="editTitle"></div>
+        <!-- Single link field -->
+        <div id="editFields-single" style="display:none">
+            <div class="form-group"><label>Download Link</label><input type="text" id="editOrigLink"></div>
+        </div>
+        <!-- Quality fields -->
+        <div id="editFields-quality" style="display:none">
+            <div class="form-row-3">
+                <div class="form-group"><label>480p</label><input type="text" id="editQ480"></div>
+                <div class="form-group"><label>720p</label><input type="text" id="editQ720"></div>
+                <div class="form-group"><label>1080p</label><input type="text" id="editQ1080"></div>
+            </div>
+        </div>
+        <hr style="border-color:var(--border);margin:16px 0;">
+        <div class="form-group">
+            <label>Categories</label>
+            <div class="multi-dropdown" id="editCatDropdownContainer">
+                <div class="multi-dropdown-selected" onclick="document.getElementById('editCatDropdownContainer').classList.toggle('open')">
+                    <div class="preview-chips" id="editCatPreview"><span class="preview-placeholder">Select Categories...</span></div>
+                    <span style="font-size:12px;color:var(--text-secondary)">▼</span>
+                </div>
+                <div class="multi-dropdown-menu">
+                    <div class="multi-dropdown-items" id="editCategoriesContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Languages</label>
+            <div class="multi-dropdown" id="editLangDropdownContainer">
+                <div class="multi-dropdown-selected" onclick="document.getElementById('editLangDropdownContainer').classList.toggle('open')">
+                    <div class="preview-chips" id="editLangPreview"><span class="preview-placeholder">Select Languages...</span></div>
+                    <span style="font-size:12px;color:var(--text-secondary)">▼</span>
+                </div>
+                <div class="multi-dropdown-menu">
+                    <div class="multi-dropdown-items" id="editLanguagesContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row-3">
+            <div class="form-group"><label>Release Year</label><input type="text" id="editYear" placeholder="e.g. 2024"></div>
+            <div class="form-group"><label>Runtime</label><input type="text" id="editRuntime" placeholder="e.g. 2h 28m"></div>
+            <div class="form-group"><label>IMDb Rating</label><input type="text" id="editImdb" placeholder="e.g. 8.8"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT ADMIN MODAL -->
+<div class="modal-overlay" id="editAdminModal">
+    <div class="modal">
+        <h3>✏️ Edit Admin</h3>
+        <input type="hidden" id="editAdminRowId">
+        <div class="form-group"><label>Admin ID</label><input type="text" id="editAdminId"></div>
+        <div class="form-group"><label>Password</label><input type="text" id="editAdminPass"></div>
+        <div class="form-group"><label>Display Name</label><input type="text" id="editAdminName"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary" onclick="saveAdminEdit()">Save Changes</button>
+            <button class="btn btn-outline" onclick="closeAdminModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- PENDING DETAILS MODAL -->
+<div class="modal-overlay" id="pendingDetailModal">
+    <div class="modal">
+        <h3>📋 Movie Details</h3>
+        <div id="pendingDetailContent"></div>
+        <hr style="border-color:var(--border);margin:20px 0;">
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-success" id="pendingApproveBtn">✅ Approve</button>
+            <button class="btn btn-danger" id="pendingRejectBtn">❌ Reject</button>
+            <button class="btn btn-outline" onclick="closePendingDetail()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let allMovies = [];
+let pendingMovies = [];
+const API = '';
+
+const CATEGORIES = [
+    "Bollywood 🇮🇳", "Hollywood 🇺🇸", "South Indian 🎬", "Web Series 🎥",
+    "Bengali ✨", "Anime & cartoon 🌀", "Comedy 🤣", "Action 💥",
+    "Romance 💑", "Horror 😱", "Thriller 🔍", "Sci-Fi 🛸",
+    "K-Drama 🎎", "18+ 🔞", "Mystery 😲", "Crime 🚔",
+    "Fantasy 🧿", "Adventure 🗺️", "Documentary 📚", "Drama 🎭"
+];
+const LANGUAGES = ["Bengali","Hindi","English","Tamil","Telugu","Korean","Gujarati","Malayalam","Chinese","Punjabi","Marathi"];
+
+// Render chips
+function renderChips(containerId, items) {
+    document.getElementById(containerId).innerHTML = items.map(item =>
+        `<button class="chip" onclick="this.classList.toggle('selected')" data-value="${item}">${item}</button>`
+    ).join('');
+}
+function getSelectedChips(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} .chip.selected`)).map(c => c.dataset.value);
+}
+renderChips('categoriesContainer', CATEGORIES);
+renderChips('languagesContainer', LANGUAGES);
+
+// Thumbnail Preview
+function previewThumbnail(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('thumbnailPreview').src = e.target.result;
+            document.getElementById('thumbnailPreviewContainer').style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        document.getElementById('thumbnailPreviewContainer').style.display = 'none';
+        document.getElementById('thumbnailPreview').src = '';
+    }
+}
+
+// Toggle password visibility
+function togglePassVis(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+    else { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
+// Toast
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast toast-' + type + ' show';
+    setTimeout(() => t.className = 'toast', 3000);
+}
+
+// Tabs
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'allMovies') loadMovies();
+    if (name === 'pending') loadPending();
+    if (name === 'admins') loadAdmins();
+}
+
+// Download type change
+function onTypeChange() {
+    const type = document.getElementById('downloadType').value;
+    document.querySelectorAll('.dynamic-fields').forEach(f => f.classList.remove('show'));
+    document.getElementById('fields-' + type).classList.add('show');
+}
+
+// Episode rows
+let episodeCount = 0;
+function addEpisodeRow() {
+    episodeCount++;
+    const div = document.createElement('div');
+    div.className = 'episode-row';
+    div.innerHTML = `
+        <span class="ep-num">E1</span>
+        <input type="text" placeholder="480p link" class="ep-480">
+        <input type="text" placeholder="720p link" class="ep-720">
+        <input type="text" placeholder="1080p link" class="ep-1080">
+        <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove();renumberEpisodes()">✕</button>
+    `;
+    document.getElementById('episodeRows').appendChild(div);
+    renumberEpisodes();
+    validateForm();
+}
+function renumberEpisodes() {
+    let st = parseInt(document.getElementById('epStart').value)||1;
+    document.querySelectorAll('.episode-row').forEach((r,i) => {
+        r.querySelector('.ep-num').textContent = `E${st+i}`;
+    });
+    validateForm();
+}
+addEpisodeRow();
+
+// Validation logic for Add Movie
+document.addEventListener('input', (e) => {
+    if (['movieThumbnail','movieTitle','singleLink','q480','q720','q1080','zip480','zip720','zip1080'].includes(e.target.id)) {
+        validateForm();
+    }
+});
+function checkDropdownClick(e) {
+    if (e.target.classList.contains('chip')) {
+        validateForm();
+        updatePreviewChips('editCategoriesContainer', 'editCatPreview');
+        updatePreviewChips('editLanguagesContainer', 'editLangPreview');
+    }
+}
+document.addEventListener('click', checkDropdownClick);
+
+function validateForm() {
+    const thumb = document.getElementById('movieThumbnail').files.length > 0;
+    const title = document.getElementById('movieTitle').value.trim().length > 0;
+    const cats = getSelectedChips('categoriesContainer').length > 0;
+    const langs = getSelectedChips('languagesContainer').length > 0;
+    const type = document.getElementById('downloadType').value;
+    
+    let hasLink = false;
+    if (type === 'single') hasLink = document.getElementById('singleLink').value.trim() !== '';
+    else if (type === 'quality') hasLink = ['q480','q720','q1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'zip') hasLink = ['zip480','zip720','zip1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'episode') hasLink = document.querySelectorAll('.episode-row').length > 0;
+    
+    const btn = document.getElementById('addBtn');
+    if(btn) btn.disabled = !(thumb && title && cats && langs && hasLink);
+}
+
+// Close dropdowns if clicked outside
+document.addEventListener('click', (e) => {
+    if(!e.target.closest('#editCatDropdownContainer')) document.getElementById('editCatDropdownContainer')?.classList.remove('open');
+    if(!e.target.closest('#editLangDropdownContainer')) document.getElementById('editLangDropdownContainer')?.classList.remove('open');
+});
+
+// Sync chips to preview
+function updatePreviewChips(containerId, previewId) {
+    const chips = getSelectedChips(containerId);
+    const pv = document.getElementById(previewId);
+    if (!pv) return;
+    if (!chips.length) {
+        pv.innerHTML = `<span class="preview-placeholder">Select...</span>`;    
+    } else {
+        pv.innerHTML = chips.map(c => `<span class="preview-chip">${c}</span>`).join('');
+    }
+}
+
+// Login
+async function doLogin() {
+    const id = document.getElementById('loginId').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    if (!id || !pass) return showToast('Enter credentials', 'error');
+    try {
+        const r = await fetch(API + '/api/admin-login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({adminId:id,adminPassword:pass}) });
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('roleBadge').textContent = d.role.toUpperCase();
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            localStorage.setItem('mz_logged', '1');
+            localStorage.setItem('mz_role', d.role);
+            loadStats();
+            showToast('Welcome back!');
+        } else showToast(d.error || 'Invalid credentials', 'error');
+    } catch(e) { showToast('Login failed', 'error'); }
+}
+function doLogout() {
+    localStorage.removeItem('mz_logged');
+    localStorage.removeItem('mz_role');
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+}
+if (localStorage.getItem('mz_logged')) {
+    document.getElementById('roleBadge').textContent = (localStorage.getItem('mz_role')||'owner').toUpperCase();
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadStats();
+}
+
+// Stats
+async function loadStats() {
+    try {
+        const [movies, pending, admins] = await Promise.all([
+            fetch(API+'/api/movie-links').then(r=>r.json()),
+            fetch(API+'/api/pending-movies').then(r=>r.json()),
+            fetch(API+'/api/admin-accounts').then(r=>r.json())
+        ]);
+        allMovies = Array.isArray(movies) ? movies : [];
+        const pend = Array.isArray(pending) ? pending : [];
+        document.getElementById('statMovies').textContent = allMovies.length;
+        document.getElementById('statViews').textContent = allMovies.reduce((s,m)=>s+(m.views||0),0);
+        document.getElementById('statPending').textContent = pend.length;
+        document.getElementById('statAdmins').textContent = Array.isArray(admins) ? admins.length : 0;
+    } catch(e) { console.error(e); }
+}
+
+// RESET FORM
+function resetAddForm() {
+    document.getElementById('movieTitle').value = '';
+    document.getElementById('singleLink').value = '';
+    document.getElementById('q480').value = '';
+    document.getElementById('q720').value = '';
+    document.getElementById('q1080').value = '';
+    document.getElementById('zip480').value = '';
+    document.getElementById('zip720').value = '';
+    document.getElementById('zip1080').value = '';
+    document.getElementById('zipFrom').value = '';
+    document.getElementById('zipTo').value = '';
+    document.getElementById('releaseYear').value = '';
+    document.getElementById('runtime').value = '';
+    document.getElementById('imdbRating').value = '';
+    document.getElementById('movieThumbnail').value = '';
+    document.getElementById('thumbnailPreviewContainer').style.display = 'none';
+    document.getElementById('thumbnailPreview').src = '';
+    document.getElementById('downloadType').value = 'single';
+    onTypeChange();
+    document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+    document.getElementById('episodeRows').innerHTML = '';
+    episodeCount = 0;
+    addEpisodeRow();
+    validateForm();
+}
+
+// ADD MOVIE (unified)
+async function addMovie() {
+    const title = document.getElementById('movieTitle').value.trim();
+    if (!title) return showToast('Enter movie title', 'error');
+
+    const type = document.getElementById('downloadType').value;
+    const categories = getSelectedChips('categoriesContainer');
+    const languages = getSelectedChips('languagesContainer');
+    const releaseYear = document.getElementById('releaseYear').value.trim() || 'N/A';
+    const runtime = document.getElementById('runtime').value.trim() || 'N/A';
+    const imdbRating = document.getElementById('imdbRating').value.trim() || 'N/A';
+    const adsEnabled = document.getElementById('adsToggle').classList.contains('on');
+
+    let body = {
+        title, downloadType: type, categories, languages,
+        releaseYear, runtime, imdbRating, adsEnabled, status: 'pending',
+        addedBy: 'owner'
+    };
+
+    if (type === 'single') {
+        body.originalLink = document.getElementById('singleLink').value.trim();
+        if (!body.originalLink) return showToast('Enter download link', 'error');
+    } else if (type === 'quality') {
+        body.quality480p = document.getElementById('q480').value.trim() || null;
+        body.quality720p = document.getElementById('q720').value.trim() || null;
+        body.quality1080p = document.getElementById('q1080').value.trim() || null;
+        if (!body.quality480p && !body.quality720p && !body.quality1080p) return showToast('Enter at least one quality link', 'error');
+    } else if (type === 'episode') {
+        const startFrom = parseInt(document.getElementById('epStart').value) || 1;
+        const rows = document.querySelectorAll('.episode-row');
+        const episodes = [];
+        rows.forEach((row, i) => {
+            episodes.push({
+                episodeNumber: startFrom + i,
+                quality480p: row.querySelector('.ep-480').value.trim(),
+                quality720p: row.querySelector('.ep-720').value.trim(),
+                quality1080p: row.querySelector('.ep-1080').value.trim()
+            });
+        });
+        body.episodes = JSON.stringify(episodes);
+        body.startFromEpisode = startFrom;
+    } else if (type === 'zip') {
+        body.fromEpisode = parseInt(document.getElementById('zipFrom').value);
+        body.toEpisode = parseInt(document.getElementById('zipTo').value);
+        body.quality480p = document.getElementById('zip480').value.trim() || null;
+        body.quality720p = document.getElementById('zip720').value.trim() || null;
+        body.quality1080p = document.getElementById('zip1080').value.trim() || null;
+        if (!body.fromEpisode || !body.toEpisode) return showToast('Enter episode range', 'error');
+        if (!body.quality480p && !body.quality720p && !body.quality1080p) return showToast('Enter at least one zip link', 'error');
+    }
+
+    const thumbnailFile = document.getElementById('movieThumbnail').files[0];
+    if (!thumbnailFile) return showToast('Please upload a movie thumbnail', 'error');
+
+    let formData = new FormData();
+    formData.append('data', JSON.stringify(body));
+    formData.append('thumbnail', thumbnailFile);
+
+    try {
+        const r = await fetch(API + '/api/movie-links', {
+            method: 'POST', body: formData
+        });
+        const d = await r.json();
+        if (d.success || d.shortUrl) {
+            const container = document.getElementById('addLinksContainer');
+            let html = '';
+            if (d.shortUrls && Object.keys(d.shortUrls).length > 0) {
+                for (const [key, url] of Object.entries(d.shortUrls)) {
+                    html += `<div class="link-item"><span>${key}: ${url}</span><button class="copy-icon" onclick="copyUrl('${url}')">📋</button></div>`;
+                }
+            } else {
+                html = `<div class="link-item"><span>${d.shortUrl || 'Submitted for review'}</span><button class="copy-icon" onclick="copyUrl('${d.shortUrl}')">📋</button></div>`;
+            }
+            container.innerHTML = html;
+            document.getElementById('addResult').classList.add('show');
+
+            resetAddForm();
+            showToast('Movie submitted for review!');
+            loadStats();
+
+            setTimeout(() => {
+                document.getElementById('addResult').classList.remove('show');
+            }, 5000);
+        } else showToast(d.error || 'Failed', 'error');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+function copyUrl(url) {
+    navigator.clipboard.writeText(url).then(()=>showToast('Copied!')).catch(()=>showToast('Copy failed','error'));
+}
+
+// ALL MOVIES (approved only)
+async function loadMovies() {
+    try {
+        const r = await fetch(API + '/api/movie-links');
+        allMovies = await r.json();
+        if (!Array.isArray(allMovies)) allMovies = [];
+        filterMovies();
+    } catch(e) { showToast('Failed to load', 'error'); }
+}
+
+function filterMovies() {
+    const search = (document.getElementById('searchInput').value || '').toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    let f = allMovies.filter(m => (m.title||'').toLowerCase().includes(search));
+    if (sort === 'date_desc') f.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+    else if (sort === 'date_asc') f.sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+    else if (sort === 'name_asc') f.sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+    else if (sort === 'name_desc') f.sort((a,b)=>(b.title||'').localeCompare(a.title||''));
+
+    const tbody = document.getElementById('moviesTable');
+    if (!f.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">No movies found</td></tr>'; return; }
+    tbody.innerHTML = f.map(m => {
+        const su = m.short_id ? `${location.origin}/m/${m.short_id}` : '—';
+        const addedBy = m.added_by || 'owner';
+        return `<tr>
+            <td>${m.id}</td>
+            <td><strong>${esc(m.title||'')}</strong></td>
+            <td>${m.download_type||'single'}</td>
+            <td>${esc(addedBy)}</td>
+            <td>${m.views||0}</td>
+            <td style="font-size:0.75rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                ${su !== '—' ? `<span>${su}</span> <button class="copy-icon" onclick="copyUrl('${su}')">📋</button>` : '—'}
+            </td>
+            <td><div class="actions">
+                <button class="btn btn-sm btn-outline" onclick="openEdit(${m.id})">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMovie(${m.id})">🗑️</button>
+            </div></td>
+        </tr>`;
+    }).join('');
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// EDIT MOVIE - shows correct fields based on type
+function openEdit(id) {
+    const m = allMovies.find(x=>x.id===id); if(!m) return;
+    const dtype = m.download_type || 'single';
+    document.getElementById('editId').value = id;
+    document.getElementById('editType').value = dtype;
+    document.getElementById('editTitle').value = m.title||'';
+
+    document.getElementById('editFields-single').style.display = 'none';
+    document.getElementById('editFields-quality').style.display = 'none';
+
+    if (dtype === 'single') {
+        document.getElementById('editFields-single').style.display = 'block';
+        document.getElementById('editOrigLink').value = m.original_link||'';
+    } else if (dtype === 'quality' || dtype === 'zip') {
+        document.getElementById('editFields-quality').style.display = 'block';
+        document.getElementById('editQ480').value = m.quality_480p||'';
+        document.getElementById('editQ720').value = m.quality_720p||'';
+        document.getElementById('editQ1080').value = m.quality_1080p||'';
+    }
+
+    renderChips('editCategoriesContainer', CATEGORIES);
+    renderChips('editLanguagesContainer', LANGUAGES);
+
+    const categories = Array.isArray(m.categories) ? m.categories : [];
+    document.querySelectorAll('#editCategoriesContainer .chip').forEach(c => {
+        if (categories.includes(c.dataset.value)) c.classList.add('selected');
+    });
+    const languages = Array.isArray(m.languages) ? m.languages : [];
+    document.querySelectorAll('#editLanguagesContainer .chip').forEach(c => {
+        if (languages.includes(c.dataset.value)) c.classList.add('selected');
+    });
+
+    updatePreviewChips('editCategoriesContainer', 'editCatPreview');
+    updatePreviewChips('editLanguagesContainer', 'editLangPreview');
+
+    document.getElementById('editYear').value = m.release_year === 'N/A' ? '' : (m.release_year || '');
+    document.getElementById('editRuntime').value = m.runtime === 'N/A' ? '' : (m.runtime || '');
+    document.getElementById('editImdb').value = m.imdb_rating === 'N/A' ? '' : (m.imdb_rating || '');
+
+    document.getElementById('editModal').classList.add('show');
+}
+function closeModal() { document.getElementById('editModal').classList.remove('show'); }
+async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const dtype = document.getElementById('editType').value;
+    const data = { 
+        title: document.getElementById('editTitle').value.trim(),
+        categories: getSelectedChips('editCategoriesContainer'),
+        languages: getSelectedChips('editLanguagesContainer'),
+        release_year: document.getElementById('editYear').value.trim() || 'N/A',
+        runtime: document.getElementById('editRuntime').value.trim() || 'N/A',
+        imdb_rating: document.getElementById('editImdb').value.trim() || 'N/A'
+    };
+
+    if (dtype === 'single') {
+        data.original_link = document.getElementById('editOrigLink').value.trim();
+    } else if (dtype === 'quality' || dtype === 'zip') {
+        data.quality_480p = document.getElementById('editQ480').value.trim()||null;
+        data.quality_720p = document.getElementById('editQ720').value.trim()||null;
+        data.quality_1080p = document.getElementById('editQ1080').value.trim()||null;
+    }
+    try { await fetch(API+`/api/movie-links/${id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); closeModal(); showToast('Updated!'); loadMovies(); } catch(e) { showToast('Failed','error'); }
+}
+async function deleteMovie(id) {
+    if (!confirm('Delete permanently?')) return;
+    try { await fetch(API+`/api/movie-links/${id}`,{method:'DELETE'}); showToast('Deleted'); loadMovies(); loadStats(); } catch(e) { showToast('Failed','error'); }
+}
+
+// PENDING - with details popup
+async function loadPending() {
+    try {
+        const r = await fetch(API+'/api/pending-movies');
+        pendingMovies = await r.json();
+        const el = document.getElementById('pendingList');
+        if (!pendingMovies.length) { el.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary)">🎉 No pending movies!</p>'; return; }
+        el.innerHTML = pendingMovies.map(m => {
+            const cats = Array.isArray(m.categories) ? m.categories.join(', ') : (m.categories||'');
+            return `<div class="pending-card">
+                <div class="pending-info">
+                    <strong>${esc(m.title||'')}</strong>
+                    <span class="badge badge-pending" style="margin-left:8px">${m.download_type||'single'}</span>
+                    <div class="pending-meta">Added by: ${esc(m.added_by||'owner')} • ${cats ? cats : 'No categories'}</div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-sm btn-outline" onclick="showPendingDetail(${m.id})">📋 Details</button>
+                    <button class="btn btn-sm btn-success" onclick="approvePending(${m.id})">✅</button>
+                    <button class="btn btn-sm btn-danger" onclick="rejectPending(${m.id})">❌</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { showToast('Failed','error'); }
+}
+
+// Show pending detail popup (telegram-style)
+function showPendingDetail(id) {
+    const m = pendingMovies.find(x=>x.id===id); if(!m) return;
+    const cats = Array.isArray(m.categories) ? m.categories.join(', ') : (m.categories||'N/A');
+    const langs = Array.isArray(m.languages) ? m.languages.join(', ') : (m.languages||'N/A');
+    const dtype = m.download_type || 'single';
+
+    let linksHtml = '';
+    if (dtype === 'single') {
+        linksHtml = `<div><span class="label">🔗 Download Link:</span><br><span class="link-val">${esc(m.original_link||'N/A')}</span></div>`;
+    } else if (dtype === 'quality' || dtype === 'zip') {
+        if (m.quality_480p) linksHtml += `<div><span class="label">📥 480p:</span> <span class="link-val">${esc(m.quality_480p)}</span></div>`;
+        if (m.quality_720p) linksHtml += `<div><span class="label">📥 720p:</span> <span class="link-val">${esc(m.quality_720p)}</span></div>`;
+        if (m.quality_1080p) linksHtml += `<div><span class="label">📥 1080p:</span> <span class="link-val">${esc(m.quality_1080p)}</span></div>`;
+    } else if (dtype === 'episode') {
+        let eps = [];
+        try { eps = typeof m.episodes === 'string' ? JSON.parse(m.episodes) : (m.episodes||[]); } catch(e){}
+        linksHtml = `<div><span class="label">📺 Episodes:</span> ${eps.length} episode(s)</div>`;
+        eps.forEach(ep => {
+            linksHtml += `<div style="margin-left:12px"><span class="label">E${ep.episodeNumber||'?'}:</span>`;
+            if (ep.quality480p) linksHtml += ` 480p `;
+            if (ep.quality720p) linksHtml += ` 720p `;
+            if (ep.quality1080p) linksHtml += ` 1080p `;
+            linksHtml += `</div>`;
+        });
+    }
+    if (dtype === 'zip') {
+        linksHtml = `<div><span class="label">📦 Zip Range:</span> <span class="value">Episode ${m.from_episode||'?'} - ${m.to_episode||'?'}</span></div>` + linksHtml;
+    }
+
+    const html = `
+        <div class="detail-preview">
+            <div><span class="label">🎬 Title:</span> <span class="value">${esc(m.title||'')}</span></div>
+            <div><span class="label">📁 Type:</span> <span class="value">${dtype.toUpperCase()}</span></div>
+            <div><span class="label">👤 Added By:</span> <span class="value">${esc(m.added_by||'owner')}</span></div>
+            <br>
+            ${linksHtml}
+            <br>
+            <div><span class="label">🏷️ Categories:</span> <span class="value">${esc(cats)}</span></div>
+            <div><span class="label">🌐 Languages:</span> <span class="value">${esc(langs)}</span></div>
+            <div><span class="label">📅 Release Year:</span> <span class="value">${esc(m.release_year||'N/A')}</span></div>
+            <div><span class="label">⏱️ Runtime:</span> <span class="value">${esc(m.runtime||'N/A')}</span></div>
+            <div><span class="label">⭐ IMDb:</span> <span class="value">${esc(m.imdb_rating||'N/A')}</span></div>
+            <div><span class="label">📢 Ads:</span> <span class="value">${m.ads_enabled !== false ? 'Enabled' : 'Disabled'}</span></div>
+        </div>`;
+
+    document.getElementById('pendingDetailContent').innerHTML = html;
+    document.getElementById('pendingApproveBtn').onclick = () => { approvePending(id); closePendingDetail(); };
+    document.getElementById('pendingRejectBtn').onclick = () => { rejectPending(id); closePendingDetail(); };
+    document.getElementById('pendingDetailModal').classList.add('show');
+}
+function closePendingDetail() { document.getElementById('pendingDetailModal').classList.remove('show'); }
+
+async function approvePending(id) { try { await fetch(API+`/api/movies/${id}/approve`,{method:'POST'}); showToast('Approved!'); loadPending(); loadStats(); } catch(e) { showToast('Failed','error'); } }
+async function rejectPending(id) { try { await fetch(API+`/api/movies/${id}/reject`,{method:'POST'}); showToast('Rejected'); loadPending(); loadStats(); } catch(e) { showToast('Failed','error'); } }
+
+// ADMINS
+async function loadAdmins() {
+    try {
+        const r = await fetch(API+'/api/admin-accounts');
+        const a = await r.json();
+        const tbody = document.getElementById('adminsTable');
+        if (!a.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-secondary)">No admin accounts</td></tr>'; return; }
+        tbody.innerHTML = a.map(x => `<tr>
+            <td><strong>${esc(x.admin_id)}</strong></td>
+            <td style="font-family:monospace;font-size:0.8rem">${esc(x.admin_password||'••••')}</td>
+            <td>${esc(x.display_name||'')}</td>
+            <td><span class="badge ${x.is_active?'badge-approved':'badge-rejected'}">${x.is_active?'Active':'Disabled'}</span></td>
+            <td>${(x.created_at||'').slice(0,10)}</td>
+            <td><div class="actions">
+                <button class="btn btn-sm btn-outline" onclick="openAdminEdit(${x.id},'${esc(x.admin_id)}','${esc(x.admin_password||'')}','${esc(x.display_name||'')}')">✏️</button>
+                <button class="btn btn-sm btn-${x.is_active?'warning':'success'}" onclick="toggleAdmin(${x.id},${!x.is_active})">${x.is_active?'Disable':'Enable'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteAdmin(${x.id})">🗑️</button>
+            </div></td>
+        </tr>`).join('');
+    } catch(e) { showToast('Failed','error'); }
+}
+async function createAdmin() {
+    const id=document.getElementById('newAdminId').value.trim(), pass=document.getElementById('newAdminPass').value.trim(), name=document.getElementById('newAdminName').value.trim();
+    if (!id || !pass) return showToast('ID & password required','error');
+    try { const r = await fetch(API+'/api/admin-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminId:id,adminPassword:pass,displayName:name})}); const d=await r.json(); if(d.success){showToast('Created!');['newAdminId','newAdminPass','newAdminName'].forEach(i=>document.getElementById(i).value='');loadAdmins();loadStats();} else showToast(d.error||'Failed','error'); } catch(e){showToast('Error','error');}
+}
+async function toggleAdmin(id,active) { try { await fetch(API+`/api/admin-accounts/${id}/toggle`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isActive:active})}); showToast('Updated'); loadAdmins(); } catch(e){showToast('Failed','error');} }
+async function deleteAdmin(id) { if(!confirm('Delete admin?'))return; try { await fetch(API+`/api/admin-accounts/${id}`,{method:'DELETE'}); showToast('Deleted'); loadAdmins(); loadStats(); } catch(e){showToast('Failed','error');} }
+
+function openAdminEdit(id, adminId, adminPass, displayName) {
+    document.getElementById('editAdminRowId').value = id;
+    document.getElementById('editAdminId').value = adminId;
+    document.getElementById('editAdminPass').value = adminPass;
+    document.getElementById('editAdminName').value = displayName;
+    document.getElementById('editAdminModal').classList.add('show');
+}
+function closeAdminModal() { document.getElementById('editAdminModal').classList.remove('show'); }
+async function saveAdminEdit() {
+    const id = document.getElementById('editAdminRowId').value;
+    const data = {
+        adminId: document.getElementById('editAdminId').value.trim(),
+        adminPassword: document.getElementById('editAdminPass').value,
+        displayName: document.getElementById('editAdminName').value.trim()
+    };
+    if (!data.adminId) return showToast('Admin ID required', 'error');
+    try {
+        const r = await fetch(API+`/api/admin-accounts/${id}`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        const d = await r.json();
+        if (d.success) { closeAdminModal(); showToast('Admin updated!'); loadAdmins(); }
+        else showToast(d.error || 'Failed', 'error');
+    } catch(e) { showToast('Error','error'); }
+}
+</script>
+</body>
+</html>

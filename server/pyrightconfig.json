@@ -1,0 +1,14 @@
+{
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "extraPaths": ["."]
+        }
+    ],
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Windows",
+    "venvPath": "",
+    "reportMissingImports": "warning",
+    "reportMissingModuleSource": "none",
+    "typeCheckingMode": "basic"
+}
