@@ -241,21 +241,23 @@ def _format_movie_for_bot(movie: Dict) -> Dict:
         'runtime': movie.get('runtime', 'N/A'),
         'imdb_rating': movie.get('imdb_rating', 'N/A'),
         'thumbnail_file_id': movie.get('thumbnail_file_id', ''),
+        'download_type': movie.get('download_type', 'single'),
         'files': files,
         'downloads': movie.get('downloads', 0),
         'views': movie.get('views', 0),
         'short_id': movie.get('short_id', ''),
         'status': movie.get('status', 'approved'),
+        'is_active': movie.get('is_active', True),
         'added_by': movie.get('added_by', ''),
         'created_at': movie.get('created_at', ''),
     }
 
 
 def search_movies(query: str, limit: int = 10) -> List[Dict]:
-    """Search movies by title."""
+    """Search movies by title (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.%{query}%', 'status': 'approved'},
+        {'title': f'ilike.%{query}%', 'status': 'approved', 'is_active': 'eq.true'},
         order='created_at.desc',
         limit=limit
     )
@@ -263,10 +265,10 @@ def search_movies(query: str, limit: int = 10) -> List[Dict]:
 
 
 def get_movies_by_first_letter(letter: str, limit: int = 30) -> List[Dict]:
-    """Get movies that start with a specific letter."""
+    """Get movies that start with a specific letter (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.{letter}%', 'status': 'approved'},
+        {'title': f'ilike.{letter}%', 'status': 'approved', 'is_active': 'eq.true'},
         order='title.asc',
         limit=limit
     )
@@ -274,12 +276,12 @@ def get_movies_by_first_letter(letter: str, limit: int = 30) -> List[Dict]:
 
 
 def get_movies_by_category(category: str, limit: int = 10, offset: int = 0) -> List[Dict]:
-    """Get movies by category."""
+    """Get movies by category (only active, approved)."""
     # Supabase array contains: use cs operator
     clean_cat = category.split(' ')[0] if ' ' in category else category
     rows = supabase.select(
         'movies', '*',
-        {'categories': f'cs.{{{clean_cat}}}', 'status': 'approved'},
+        {'categories': f'cs.{{{clean_cat}}}', 'status': 'approved', 'is_active': 'eq.true'},
         order='created_at.desc',
         limit=limit
     )

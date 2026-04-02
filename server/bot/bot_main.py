@@ -109,16 +109,27 @@ async def review_pending_movies(update: Update, context: ContextTypes.DEFAULT_TY
         mid = movie.get('movie_id')
         cats = ', '.join(movie.get('categories', []))
         langs = ', '.join(movie.get('languages', []))
+        added_by = movie.get('added_by', 'owner')
+        release_year = movie.get('release_year', 'N/A')
+        imdb_rating = movie.get('imdb_rating', 'N/A')
+        runtime = movie.get('runtime', 'N/A')
 
-        text = (f"Title: {title}\n"
-                f"Categories: {cats or 'N/A'}\n"
-                f"Languages: {langs or 'N/A'}\n"
-                f"Type: {movie.get('download_type', 'single')}")
+        text = (f"🎬 Title: {title}\n"
+                f"👤 Added By: {added_by}\n"
+                f"📁 Type: {movie.get('download_type', 'single')}\n"
+                f"🏷️ Categories: {cats or 'N/A'}\n"
+                f"🌐 Languages: {langs or 'N/A'}\n")
+        if release_year != 'N/A':
+            text += f"📅 Year: {release_year}\n"
+        if imdb_rating != 'N/A':
+            text += f"⭐ IMDb: {imdb_rating}\n"
+        if runtime != 'N/A':
+            text += f"⏱️ Runtime: {runtime}\n"
 
         buttons = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Approve", callback_data=f"review_approve_{mid}"),
-                InlineKeyboardButton("Reject", callback_data=f"review_reject_{mid}")
+                InlineKeyboardButton("✅ Approve", callback_data=f"review_approve_{mid}"),
+                InlineKeyboardButton("❌ Reject", callback_data=f"review_reject_{mid}")
             ]
         ])
 

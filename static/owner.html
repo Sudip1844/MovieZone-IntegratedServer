@@ -105,6 +105,14 @@
         }
         input:focus, select:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
         .form-group { margin-bottom: 16px; }
+        /* Validation error states */
+        .form-group.has-error label { color: #ef4444; }
+        .form-group.has-error input,
+        .form-group.has-error select { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+        .form-group.has-error .chip-container { border: 1px solid #ef4444; border-radius: 12px; padding: 6px; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+        .form-group .error-text { display: none; font-size: 0.75rem; color: #ef4444; margin-top: 4px; }
+        .form-group.has-error .error-text { display: block; }
+        .label-required::after { content: ' *'; color: #ef4444; font-weight: 700; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
@@ -341,15 +349,16 @@
             <div class="card">
                 <h3>➕ Add New Movie</h3>
                 <!-- START IMAGE UPLOAD -->
-                <div class="form-group">
-                    <label>Movie Thumbnail (Upload Image) *</label>
-                    <input type="file" id="movieThumbnail" accept="image/*" onchange="previewThumbnail(this)">
+                <div class="form-group" id="fg-thumbnail">
+                    <label class="label-required">Movie Thumbnail (Upload Image)</label>
+                    <input type="file" id="movieThumbnail" accept="image/*" onchange="previewThumbnail(this);clearError('fg-thumbnail')">
+                    <span class="error-text">Thumbnail is required</span>
                     <div id="thumbnailPreviewContainer" style="margin-top: 10px; display: none;">
                         <img id="thumbnailPreview" src="" alt="Thumbnail Preview" style="max-width: 200px; max-height: 250px; border-radius: 8px; border: 1px solid var(--border);">
                     </div>
                 </div>
                 <!-- END IMAGE UPLOAD -->
-                <div class="form-group"><label>Movie Title *</label><input type="text" id="movieTitle" placeholder="e.g. Inception (2010)"></div>
+                <div class="form-group" id="fg-title"><label class="label-required">Movie Title</label><input type="text" id="movieTitle" placeholder="e.g. Inception (2010)" oninput="clearError('fg-title')"></div>
 
                 <div class="type-selector">
                     <label>Download Type</label>
@@ -363,7 +372,7 @@
 
                 <!-- Single Link -->
                 <div class="dynamic-fields show" id="fields-single">
-                    <div class="form-group"><label>Download Link (Original URL) *</label><input type="text" id="singleLink" placeholder="https://..."></div>
+                    <div class="form-group" id="fg-singleLink"><label class="label-required">Download Link (Original URL)</label><input type="text" id="singleLink" placeholder="https://..." oninput="clearError('fg-singleLink')"><span class="error-text">At least one download link is required</span></div>
                 </div>
 
                 <!-- Quality -->
@@ -397,8 +406,8 @@
 
                 <hr style="border-color:var(--border);margin:20px 0;">
 
-                <div class="form-group"><label>Categories</label><div class="chip-container" id="categoriesContainer"></div></div>
-                <div class="form-group"><label>Languages</label><div class="chip-container" id="languagesContainer"></div></div>
+                <div class="form-group" id="fg-categories"><label class="label-required">Categories</label><div class="chip-container" id="categoriesContainer"></div><span class="error-text">Select at least one category</span></div>
+                <div class="form-group" id="fg-languages"><label class="label-required">Languages</label><div class="chip-container" id="languagesContainer"></div><span class="error-text">Select at least one language</span></div>
                 <div class="form-row-3">
                     <div class="form-group"><label>Release Year</label><input type="text" id="releaseYear" placeholder="e.g. 2024"></div>
                     <div class="form-group"><label>Runtime</label><input type="text" id="runtime" placeholder="e.g. 2h 28m"></div>
@@ -433,8 +442,8 @@
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Added By</th><th>Views</th><th>Short URL</th><th>Actions</th></tr></thead>
-                        <tbody id="moviesTable"><tr><td colspan="7" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+                        <thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Added By</th><th>Views</th><th>Active</th><th>Short URL</th><th>Actions</th></tr></thead>
+                        <tbody id="moviesTable"><tr><td colspan="8" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -546,6 +555,19 @@
 </div>
 
 <!-- PENDING DETAILS MODAL -->
+<!-- CUSTOM DELETE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="deleteConfirmModal">
+    <div class="modal" style="max-width:420px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">⚠️</div>
+        <h3 id="deleteConfirmTitle" style="color:var(--danger);margin-bottom:12px;">Delete?</h3>
+        <p id="deleteConfirmText" style="color:var(--text-secondary);margin-bottom:24px;font-size:0.9rem;">This action cannot be undone.</p>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button class="btn btn-danger" id="deleteConfirmYes" style="min-width:120px;">🗑️ Delete</button>
+            <button class="btn btn-outline" onclick="closeDeleteConfirm()" style="min-width:120px;">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="pendingDetailModal">
     <div class="modal">
         <h3>📋 Movie Details</h3>
@@ -673,6 +695,28 @@ function checkDropdownClick(e) {
 }
 document.addEventListener('click', checkDropdownClick);
 
+function clearError(fgId) {
+    const el = document.getElementById(fgId);
+    if (el) el.classList.remove('has-error');
+    validateForm();
+}
+function showFieldErrors() {
+    const thumb = document.getElementById('movieThumbnail').files.length > 0;
+    const title = document.getElementById('movieTitle').value.trim().length > 0;
+    const cats = getSelectedChips('categoriesContainer').length > 0;
+    const langs = getSelectedChips('languagesContainer').length > 0;
+    const type = document.getElementById('downloadType').value;
+    let hasLink = false;
+    if (type === 'single') hasLink = document.getElementById('singleLink').value.trim() !== '';
+    else if (type === 'quality') hasLink = ['q480','q720','q1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'zip') hasLink = ['zip480','zip720','zip1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'episode') hasLink = document.querySelectorAll('.episode-row').length > 0;
+    if (!thumb) document.getElementById('fg-thumbnail')?.classList.add('has-error');
+    if (!title) document.getElementById('fg-title')?.classList.add('has-error');
+    if (!cats) document.getElementById('fg-categories')?.classList.add('has-error');
+    if (!langs) document.getElementById('fg-languages')?.classList.add('has-error');
+    if (!hasLink && type === 'single') document.getElementById('fg-singleLink')?.classList.add('has-error');
+}
 function validateForm() {
     const thumb = document.getElementById('movieThumbnail').files.length > 0;
     const title = document.getElementById('movieTitle').value.trim().length > 0;
@@ -787,7 +831,7 @@ function resetAddForm() {
 // ADD MOVIE (unified)
 async function addMovie() {
     const title = document.getElementById('movieTitle').value.trim();
-    if (!title) return showToast('Enter movie title', 'error');
+    if (!title) { showFieldErrors(); return showToast('Fill all required fields', 'error'); }
 
     const type = document.getElementById('downloadType').value;
     const categories = getSelectedChips('categoriesContainer');
@@ -899,12 +943,18 @@ function filterMovies() {
     tbody.innerHTML = f.map(m => {
         const su = m.short_id ? `${location.origin}/m/${m.short_id}` : '—';
         const addedBy = m.added_by || 'owner';
-        return `<tr>
+        const isActive = m.is_active !== false;
+        return `<tr style="${!isActive ? 'opacity:0.5' : ''}">
             <td>${m.id}</td>
             <td><strong>${esc(m.title||'')}</strong></td>
             <td>${m.download_type||'single'}</td>
             <td>${esc(addedBy)}</td>
             <td>${m.views||0}</td>
+            <td>
+                <div class="toggle" style="justify-content:center">
+                    <div class="toggle-switch ${isActive ? 'on' : ''}" onclick="toggleMovieActive(${m.id}, ${!isActive})" title="${isActive ? 'Active' : 'Inactive'}"></div>
+                </div>
+            </td>
             <td style="font-size:0.75rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 ${su !== '—' ? `<span>${su}</span> <button class="copy-icon" onclick="copyUrl('${su}')">📋</button>` : '—'}
             </td>
@@ -981,9 +1031,33 @@ async function saveEdit() {
     }
     try { await fetch(API+`/api/movie-links/${id}`, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); closeModal(); showToast('Updated!'); loadMovies(); } catch(e) { showToast('Failed','error'); }
 }
-async function deleteMovie(id) {
-    if (!confirm('Delete permanently?')) return;
-    try { await fetch(API+`/api/movie-links/${id}`,{method:'DELETE'}); showToast('Deleted'); loadMovies(); loadStats(); } catch(e) { showToast('Failed','error'); }
+let pendingDeleteId = null;
+let pendingDeleteType = 'movie';
+function closeDeleteConfirm() { document.getElementById('deleteConfirmModal').classList.remove('show'); pendingDeleteId = null; }
+
+function deleteMovie(id) {
+    const m = allMovies.find(x => x.id === id);
+    pendingDeleteId = id;
+    pendingDeleteType = 'movie';
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Movie?';
+    document.getElementById('deleteConfirmText').textContent = m ? `"${m.title}" will be permanently deleted.` : 'This movie will be permanently deleted.';
+    document.getElementById('deleteConfirmModal').classList.add('show');
+    document.getElementById('deleteConfirmYes').onclick = async () => {
+        closeDeleteConfirm();
+        try { await fetch(API+`/api/movie-links/${pendingDeleteId}`,{method:'DELETE'}); showToast('Deleted'); loadMovies(); loadStats(); } catch(e) { showToast('Failed','error'); }
+    };
+}
+
+async function toggleMovieActive(id, active) {
+    try {
+        await fetch(API+`/api/movie-links/${id}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ is_active: active })
+        });
+        showToast(active ? 'Movie activated' : 'Movie deactivated');
+        loadMovies();
+    } catch(e) { showToast('Failed', 'error'); }
 }
 
 // PENDING - with details popup
@@ -1094,7 +1168,17 @@ async function createAdmin() {
     try { const r = await fetch(API+'/api/admin-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminId:id,adminPassword:pass,displayName:name})}); const d=await r.json(); if(d.success){showToast('Created!');['newAdminId','newAdminPass','newAdminName'].forEach(i=>document.getElementById(i).value='');loadAdmins();loadStats();} else showToast(d.error||'Failed','error'); } catch(e){showToast('Error','error');}
 }
 async function toggleAdmin(id,active) { try { await fetch(API+`/api/admin-accounts/${id}/toggle`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isActive:active})}); showToast('Updated'); loadAdmins(); } catch(e){showToast('Failed','error');} }
-async function deleteAdmin(id) { if(!confirm('Delete admin?'))return; try { await fetch(API+`/api/admin-accounts/${id}`,{method:'DELETE'}); showToast('Deleted'); loadAdmins(); loadStats(); } catch(e){showToast('Failed','error');} }
+function deleteAdmin(id) {
+    pendingDeleteId = id;
+    pendingDeleteType = 'admin';
+    document.getElementById('deleteConfirmTitle').textContent = 'Delete Admin?';
+    document.getElementById('deleteConfirmText').textContent = 'This admin account will be permanently deleted.';
+    document.getElementById('deleteConfirmModal').classList.add('show');
+    document.getElementById('deleteConfirmYes').onclick = async () => {
+        closeDeleteConfirm();
+        try { await fetch(API+`/api/admin-accounts/${pendingDeleteId}`,{method:'DELETE'}); showToast('Deleted'); loadAdmins(); loadStats(); } catch(e){showToast('Failed','error');}
+    };
+}
 
 function openAdminEdit(id, adminId, adminPass, displayName) {
     document.getElementById('editAdminRowId').value = id;

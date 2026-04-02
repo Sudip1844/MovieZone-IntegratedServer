@@ -196,7 +196,8 @@ def update_movie_link(movie_id):
             'status': 'status',
             'release_year': 'release_year',
             'runtime': 'runtime',
-            'imdb_rating': 'imdb_rating'
+            'imdb_rating': 'imdb_rating',
+            'is_active': 'is_active'
         }
         for key, db_key in field_map.items():
             if key in data:
