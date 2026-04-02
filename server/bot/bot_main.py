@@ -233,8 +233,16 @@ def build_application():
     # Initialize database
     db.initialize_database()
 
-    # Create application
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Create application with increased timeouts to prevent 'Timed out' errors
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .connect_timeout(30.0)
+        .read_timeout(30.0)
+        .write_timeout(30.0)
+        .pool_timeout(30.0)
+        .build()
+    )
 
     # Import handlers from copied Tgbot code
     from bot.handlers.start_handler import start_handlers
@@ -361,7 +369,7 @@ def run_bot_in_thread():
 
                 # Start polling (this runs until stopped)
                 await application.updater.start_polling(
-                    drop_pending_updates=True
+                    drop_pending_updates=False
                 )
 
                 # Keep running
