@@ -48,11 +48,11 @@ def create_movie_link():
         if 'thumbnail' in request.files:
             file = request.files['thumbnail']
             if file and file.filename != '':
-                from bot.config import BOT_TOKEN, OWNER_ID
+                from bot.config import BOT_TOKEN, DUMP_CHAT_ID
                 import requests
                 
                 url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-                payload = {'chat_id': OWNER_ID, 'disable_notification': True}
+                payload = {'chat_id': DUMP_CHAT_ID, 'disable_notification': True}
                 files = {'photo': (file.filename, file.read(), file.content_type)}
                 
                 try:

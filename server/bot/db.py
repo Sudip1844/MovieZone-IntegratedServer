@@ -257,7 +257,7 @@ def search_movies(query: str, limit: int = 10) -> List[Dict]:
     """Search movies by title (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.%{query}%', 'status': 'approved', 'is_active': 'eq.true'},
+        {'title': f'ilike.%{query}%', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
         order='created_at.desc',
         limit=limit
     )
@@ -268,7 +268,7 @@ def get_movies_by_first_letter(letter: str, limit: int = 30) -> List[Dict]:
     """Get movies that start with a specific letter (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.{letter}%', 'status': 'approved', 'is_active': 'eq.true'},
+        {'title': f'ilike.{letter}%', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
         order='title.asc',
         limit=limit
     )
@@ -281,7 +281,7 @@ def get_movies_by_category(category: str, limit: int = 10, offset: int = 0) -> L
     clean_cat = category.split(' ')[0] if ' ' in category else category
     rows = supabase.select(
         'movies', '*',
-        {'categories': f'cs.{{{clean_cat}}}', 'status': 'approved', 'is_active': 'eq.true'},
+        {'categories': f'cs.{{{clean_cat}}}', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
         order='created_at.desc',
         limit=limit
     )
@@ -448,10 +448,10 @@ def generate_weekly_report() -> str:
         report_title = f"Weekly Report (Past 7 Days)\n\n"
         report = report_title
 
-        # Get all movies added in past 7 days
+        # Get all movies added in past 7 days that are posted to channels
         recent_movies = supabase.select(
             'movies', '*',
-            {'created_at': f'gte.{seven_days_ago}'},
+            {'created_at': f'gte.{seven_days_ago}', 'is_posted': 'eq.true'},
             order='created_at.desc'
         )
 
@@ -506,3 +506,42 @@ def generate_weekly_report() -> str:
     except Exception as e:
         logger.error(f"Error generating weekly report: {e}")
         return f"Error generating weekly report: {str(e)}"
+
+def get_pending_movies() -> List[Dict]:
+    """Get all movies with status 'pending'."""
+    try:
+        rows = supabase.select('movies', '*', {'status': 'pending'}, order='created_at.asc')
+        if rows is None:  
+            return []
+        return [_format_movie_for_bot(m) for m in rows]
+    except Exception as e:
+        logger.error(f"Error fetching pending movies: {e}")
+        return []
+
+def approve_movie(movie_id: int) -> bool:
+    """Approve a pending movie."""
+    try:
+        supabase.update('movies', {'status': 'approved'}, {'id': movie_id})
+        return True
+    except Exception as e:
+        logger.error(f"Error approving movie {movie_id}: {e}")
+        return False
+
+def reject_movie(movie_id: int, reject_reason: str = 'rejected_by_tg_bot') -> bool:
+    """Reject a pending movie."""
+    try:
+        supabase.update('movies', {'status': reject_reason}, {'id': movie_id})
+        return True
+    except Exception as e:
+        logger.error(f"Error rejecting movie {movie_id}: {e}")
+        return False
+
+def mark_movie_as_posted(movie_id: int) -> bool:
+    """Mark a movie as posted so it shows in reports/removal."""
+    try:
+        # Assuming is_posted is a column we will add shortly
+        supabase.update('movies', {'is_posted': True}, {'id': movie_id})
+        return True
+    except Exception as e:
+        logger.error(f"Error marking movie as posted {movie_id}: {e}")
+        return False

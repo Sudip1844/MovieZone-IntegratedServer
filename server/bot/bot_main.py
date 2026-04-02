@@ -20,25 +20,6 @@ import bot.db as db
 logger = logging.getLogger(__name__)
 
 
-# --- Auto-Delete Job Functions ---
-async def delete_message_job(context):
-    """Deletes a message after a specified time."""
-    try:
-        await context.bot.delete_message(chat_id=context.job.data['chat_id'],
-                                         message_id=context.job.data['message_id'])
-    except Exception as e:
-        logger.error(f"Failed to delete message: {e}")
-
-
-def schedule_message_deletion(context, chat_id: int, message_id: int, delay_seconds: int = 86400):
-    """Schedules a message to be deleted after a delay."""
-    context.job_queue.run_once(
-        delete_message_job,
-        when=delay_seconds,
-        data={'chat_id': chat_id, 'message_id': message_id}
-    )
-
-
 # --- Channel Member Handler ---
 def extract_status_change(chat_member_update: ChatMemberUpdated):
     """Extract status change from ChatMemberUpdated."""
@@ -101,10 +82,10 @@ async def review_pending_movies(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("No pending movies to review!")
         return
 
-    await update.message.reply_text(f"Pending movies for review: {len(pending)}\n")
+    await update.message.reply_text(f"Pending movies for review: {len(pending)}\n(Showing 5 at a time)")
 
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    for movie in pending[:10]:  # Show max 10 at a time
+    for movie in pending[:5]:  # Show max 5 at a time
         title = movie.get('title', 'Unknown')
         mid = movie.get('movie_id')
         cats = ', '.join(movie.get('categories', []))
@@ -164,37 +145,45 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
             title = movie.get('title', 'Unknown') if movie else 'Unknown'
             await query.edit_message_text(f"APPROVED: {title}\n\nMovie is now live!")
 
-            # Auto-post to channel
-            from bot.config import CHANNEL_USERNAME
-            if CHANNEL_USERNAME and movie:
+            # Auto-post to all configured channels
+            if movie:
                 try:
                     from bot.utils import format_movie_post
-                    # The user requested exactly the string formatted by format_movie_post 
-                    # with no inline buttons for the actual file downloads.
-                    post_text = format_movie_post(movie, CHANNEL_USERNAME)
+                    # The username pass is deprecated but we'll leave it as a string
+                    post_text = format_movie_post(movie, "moviezone969") 
                     thumbnail = movie.get('thumbnail_file_id')
                     
-                    if thumbnail:
-                        await context.bot.send_photo(
-                            chat_id=f"@{CHANNEL_USERNAME}",
-                            photo=thumbnail,
-                            caption=post_text,
-                            parse_mode='HTML'
-                        )
-                    else:
-                        await context.bot.send_message(
-                            chat_id=f"@{CHANNEL_USERNAME}",
-                            text=post_text,
-                            parse_mode='HTML'
-                        )
-                    logger.info(f"Movie posted to channel: {title}")
+                    channels = db.get_all_channels()
+                    if channels:
+                        for channel in channels:
+                            channel_username = channel.get('channel_id') # We use channel_id for pushing
+                            if not channel_username:
+                                continue
+                            try:
+                                if thumbnail:
+                                    await context.bot.send_photo(
+                                        chat_id=channel_username,
+                                        photo=thumbnail,
+                                        caption=post_text,
+                                        parse_mode='HTML'
+                                    )
+                                else:
+                                    await context.bot.send_message(
+                                        chat_id=channel_username,
+                                        text=post_text,
+                                        parse_mode='HTML'
+                                    )
+                                db.mark_movie_as_posted(movie_id)
+                                logger.info(f"Movie posted to channel: {title} on {channel_username}")
+                            except Exception as e:
+                                logger.error(f"Failed to post to channel {channel_username}: {e}")
                 except Exception as e:
-                    logger.error(f"Failed to post to channel: {e}")
+                    logger.error(f"Failed to post to channels: {e}")
         else:
             await query.edit_message_text("Failed to approve movie.")
 
     elif action == 'reject':
-        success = db.reject_movie(movie_id)
+        success = db.reject_movie(movie_id, 'rejected_by_tg_bot')
         if success:
             await query.edit_message_text("Movie rejected.")
         else:

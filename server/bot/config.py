@@ -14,6 +14,7 @@ CHANNEL_USERNAME = os.getenv('CHANNEL_USERNAME', 'moviezone969')
 
 # --- Owner Configuration ---
 OWNER_ID = int(os.getenv('OWNER_ID', '5379553841'))
+DUMP_CHAT_ID = os.getenv('DUMP_CHAT_ID', os.getenv('OWNER_ID', '5379553841'))
 
 # --- Bot Settings ---
 # Categories for movie addition (used by website now, kept for reference)

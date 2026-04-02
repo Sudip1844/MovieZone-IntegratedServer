@@ -206,8 +206,16 @@
         /* Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; }
-        .stat-value { font-size: 2rem; font-weight: 700; color: var(--cyan); }
-        .stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+        .stats-val { font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+        .stats-label { color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Refresh Button Animation */
+        @keyframes spin-icon {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn-refresh .icon { display: inline-block; transition: transform 0.3s ease; }
+        .btn-refresh.spinning .icon { animation: spin-icon 1s linear infinite; }
 
         /* Toolbar */
         .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -249,6 +257,14 @@
         }
         .pending-info { flex: 1; min-width: 200px; }
         .pending-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Validation */
+        .has-error input, .has-error select, .has-error .multi-dropdown-selected, .has-error .file-upload-box {
+            border-color: var(--danger) !important;
+            background: rgba(239, 68, 68, 0.05) !important;
+        }
+        .has-error label { color: var(--danger) !important; }
+
 
         /* Detail preview (like telegram bot post) */
         .detail-preview {
@@ -438,7 +454,7 @@
                         <option value="name_asc">Name A-Z</option>
                         <option value="name_desc">Name Z-A</option>
                     </select>
-                    <button class="btn btn-sm btn-outline" onclick="loadMovies()">🔄 Refresh</button>
+                    <button class="btn btn-sm btn-outline btn-refresh" onclick="loadMovies(this)"><span class="icon">🔄</span> Refresh</button>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -489,6 +505,15 @@
         <h3>✏️ Edit Movie</h3>
         <input type="hidden" id="editId">
         <input type="hidden" id="editType">
+        <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;margin-bottom:16px;">
+            <div>
+                <label style="margin-bottom:2px">Status (Active/Inactive)</label>
+                <div style="font-size:0.8rem;color:var(--text-secondary)">Turn off to hide from users without deleting</div>
+            </div>
+            <div class="toggle">
+                <div class="toggle-switch" id="editIsActiveToggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+        </div>
         <div class="form-group"><label>Title</label><input type="text" id="editTitle"></div>
         <!-- Single link field -->
         <div id="editFields-single" style="display:none">
@@ -910,7 +935,7 @@ async function addMovie() {
 
             setTimeout(() => {
                 document.getElementById('addResult').classList.remove('show');
-            }, 5000);
+            }, 15000);
         } else showToast(d.error || 'Failed', 'error');
     } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
@@ -920,13 +945,23 @@ function copyUrl(url) {
 }
 
 // ALL MOVIES (approved only)
-async function loadMovies() {
+async function loadMovies(btn = null) {
+    if (btn) {
+        btn.classList.add('spinning');
+        btn.disabled = true;
+    }
     try {
         const r = await fetch(API + '/api/movie-links');
         allMovies = await r.json();
         if (!Array.isArray(allMovies)) allMovies = [];
         filterMovies();
     } catch(e) { showToast('Failed to load', 'error'); }
+    if (btn) {
+        setTimeout(() => {
+            btn.classList.remove('spinning');
+            btn.disabled = false;
+        }, 500); // minimum 500ms spin for effect
+    }
 }
 
 function filterMovies() {
@@ -940,12 +975,12 @@ function filterMovies() {
 
     const tbody = document.getElementById('moviesTable');
     if (!f.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">No movies found</td></tr>'; return; }
-    tbody.innerHTML = f.map(m => {
+    tbody.innerHTML = f.map((m, idx) => {
         const su = m.short_id ? `${location.origin}/m/${m.short_id}` : '—';
         const addedBy = m.added_by || 'owner';
         const isActive = m.is_active !== false;
         return `<tr style="${!isActive ? 'opacity:0.5' : ''}">
-            <td>${m.id}</td>
+            <td>${idx + 1}</td>
             <td><strong>${esc(m.title||'')}</strong></td>
             <td>${m.download_type||'single'}</td>
             <td>${esc(addedBy)}</td>
@@ -1007,6 +1042,10 @@ function openEdit(id) {
     document.getElementById('editRuntime').value = m.runtime === 'N/A' ? '' : (m.runtime || '');
     document.getElementById('editImdb').value = m.imdb_rating === 'N/A' ? '' : (m.imdb_rating || '');
 
+    const isActive = m.is_active !== false;
+    if (isActive) document.getElementById('editIsActiveToggle').classList.add('on');
+    else document.getElementById('editIsActiveToggle').classList.remove('on');
+
     document.getElementById('editModal').classList.add('show');
 }
 function closeModal() { document.getElementById('editModal').classList.remove('show'); }
@@ -1019,7 +1058,8 @@ async function saveEdit() {
         languages: getSelectedChips('editLanguagesContainer'),
         release_year: document.getElementById('editYear').value.trim() || 'N/A',
         runtime: document.getElementById('editRuntime').value.trim() || 'N/A',
-        imdb_rating: document.getElementById('editImdb').value.trim() || 'N/A'
+        imdb_rating: document.getElementById('editImdb').value.trim() || 'N/A',
+        is_active: document.getElementById('editIsActiveToggle').classList.contains('on')
     };
 
     if (dtype === 'single') {

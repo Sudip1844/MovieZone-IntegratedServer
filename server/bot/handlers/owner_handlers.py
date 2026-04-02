@@ -45,9 +45,9 @@ async def add_admin_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if update.callback_query:
         query = update.callback_query
         await query.answer()
-        await query.edit_message_text("👤 Forward message from user or send User ID:")
+        await query.edit_message_text("👤 Please send the User ID (numeric) of the new admin:")
     else:
-        await update.message.reply_text("👤 Forward message from user or send User ID:", reply_markup=keyboard)
+        await update.message.reply_text("👤 Please send the User ID (numeric) of the new admin:", reply_markup=keyboard)
     return GET_ADMIN_USERID
 
 async def get_admin_userid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -68,30 +68,17 @@ async def get_admin_userid(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     user_id = None
     first_name = None
     username = None
-
-    if update.message.forward_from:
-        user_id = update.message.forward_from.id
-        first_name = update.message.forward_from.first_name
-        username = update.message.forward_from.username
-    elif update.message.text and update.message.text.isdigit():
+    
+    if update.message.text and update.message.text.isdigit():
         user_id = int(update.message.text)
-        # We need to fetch user details if only ID is provided
-        try:
-            chat = await context.bot.get_chat(user_id)
-            first_name = chat.first_name
-            username = chat.username
-        except Exception as e:
-            await update.message.reply_text("Could not find a user with this ID. Please try again or forward a message.")
-            logger.error(f"Error fetching chat for user ID {user_id}: {e}")
-            return GET_ADMIN_USERID
     else:
-        await update.message.reply_text("Invalid input. Please forward a message or send a valid User ID.")
+        await update.message.reply_text("Invalid input. Please send a valid User ID (only numbers).")
         return GET_ADMIN_USERID
     
-    context.user_data['new_admin'] = {'id': user_id, 'first_name': first_name, 'username': username}
+    context.user_data['new_admin'] = {'id': user_id, 'first_name': f"User_{user_id}", 'username': f"user{user_id}"}
     
     # Simple message without editing
-    await update.message.reply_text(f"✅ User: {first_name} (@{username})\n\nEnter short name (e.g., 'Sudip'):")
+    await update.message.reply_text(f"✅ User ID: {user_id}\n\nEnter short name (e.g., 'Sudip'):")
     return GET_ADMIN_SHORT_NAME
 
 async def get_admin_short_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
