@@ -34,9 +34,10 @@ def get_link_info(short_id):
         movie = None
         target_link = ''
         link_label = 'Download'
+        cols = 'id, title, ads_enabled, short_id, short_ids, download_type, original_link, quality_480p, quality_720p, quality_1080p, episodes, views'
 
         # 1. Check main short_id field
-        rows = supabase.select('movies', '*', {'short_id': short_id})
+        rows = supabase.select('movies', cols, {'short_id': short_id})
         if rows:
             movie = rows[0]
             dtype = movie.get('download_type', 'single')
@@ -49,7 +50,19 @@ def get_link_info(short_id):
 
         # 2. If not found, search short_ids JSON across all movies
         if not movie:
-            all_movies = supabase.select('movies', '*')
+            all_movies = supabase.select('movies', cols, {'short_ids::text': f'ilike.*{short_id}*'})
+            
+            if not all_movies:
+                tiny_movies = supabase.select('movies', 'id, short_ids')
+                found_id = None
+                for tm in tiny_movies:
+                    sraw = tm.get('short_ids', '{}')
+                    if sraw and short_id in str(sraw):
+                        found_id = tm['id']
+                        break
+                if found_id:
+                    all_movies = supabase.select('movies', cols, {'id': found_id})
+
             for m in all_movies:
                 sids_raw = m.get('short_ids', '{}')
                 try:

@@ -300,15 +300,9 @@ async def get_channel_short_name(update: Update, context: ContextTypes.DEFAULT_T
     channel_info = context.user_data['new_channel']
     channel_info['short_name'] = short_name
     
-    # Try to verify channel access first
+    # Bypass bot channel access check as requested by User
     channel_id = f"@{channel_info['username']}"
-    try:
-        chat = await context.bot.get_chat(channel_id)
-        channel_name = chat.title or channel_info['username']
-    except Exception as e:
-        error_text = f"❌ Cannot access {channel_id}. Please check bot permissions."
-        await update.message.reply_text(error_text)
-        return GET_CHANNEL_LINK
+    channel_name = channel_info['username']
     
     # Add channel to database  
     success = db.add_channel(channel_id, channel_name or "Unknown", short_name or "Unknown")
@@ -471,14 +465,7 @@ async def handle_admin_management(update: Update, context: ContextTypes.DEFAULT_
         })()
         await remove_admin_start(fake_update, context)
 
-@restricted(allowed_roles=['owner'])
-async def manage_channels(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Provides buttons to add or remove channels."""
-    keyboard = [
-        [InlineKeyboardButton("➕ Add New Channel", callback_data="channel_add")],
-        [InlineKeyboardButton("➖ Remove a Channel", callback_data="channel_remove")]
-    ]
-    await update.message.reply_text("Select an option to manage channels:", reply_markup=InlineKeyboardMarkup(keyboard))
+
 
 
 async def handle_channel_management(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -602,8 +589,8 @@ owner_handlers = [
     remove_admin_conv,
     add_channel_conv,
     remove_channel_conv,
-    # NOTE: "Manage Admins" button removed from keyboard - admins managed via website
-    # "Review Movies" button handler is registered in bot_main.py directly
+    # Manage Admins and Channels
+    MessageHandler(filters.Regex("^👥 Manage Admins$"), manage_admins),
     MessageHandler(filters.Regex("^📢 Manage Channels$"), manage_channels),
     CallbackQueryHandler(handle_channel_management, pattern="^channel_remove$")
 ]

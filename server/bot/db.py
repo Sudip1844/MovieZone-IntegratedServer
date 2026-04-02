@@ -67,10 +67,10 @@ def get_user_role(user_id: int) -> str:
 
 def add_admin(admin_id: int, short_name: str, first_name: str, username: Optional[str] = None):
     """Add a new admin to the database."""
-    # Update user role to admin
     try:
-        existing = supabase.select('users', '*', {'user_id': admin_id})
-        if existing:
+        # First update user role in users table
+        existing_user = supabase.select('users', '*', {'user_id': admin_id})
+        if existing_user:
             supabase.update('users', {'role': 'admin'}, {'user_id': admin_id})
         else:
             supabase.insert('users', {
@@ -79,6 +79,17 @@ def add_admin(admin_id: int, short_name: str, first_name: str, username: Optiona
                 'username': username or '',
                 'role': 'admin'
             })
+            
+        # Add to telegram_admins table
+        existing_admin = supabase.select('telegram_admins', '*', {'user_id': admin_id})
+        if existing_admin:
+            supabase.update('telegram_admins', {'short_name': short_name}, {'user_id': admin_id})
+        else:
+            supabase.insert('telegram_admins', {
+                'user_id': admin_id,
+                'short_name': short_name
+            })
+            
         logger.info(f"Admin added: {admin_id} ({short_name})")
         return True
     except Exception as e:
@@ -88,8 +99,8 @@ def add_admin(admin_id: int, short_name: str, first_name: str, username: Optiona
 
 def get_admin_info(admin_id: int) -> Optional[Dict]:
     """Get admin information by user ID."""
-    rows = supabase.select('users', '*', {'user_id': admin_id})
-    if rows and rows[0].get('role') in ('admin', 'owner'):
+    rows = supabase.select('telegram_admins', '*', {'user_id': admin_id})
+    if rows:
         return rows[0]
     return None
 
@@ -99,6 +110,7 @@ def remove_admin(identifier: str) -> bool:
     try:
         user_id = int(identifier)
         supabase.update('users', {'role': 'user'}, {'user_id': user_id})
+        supabase.delete('telegram_admins', {'user_id': user_id})
         logger.info(f"Admin removed: {user_id}")
         return True
     except Exception as e:
@@ -107,8 +119,8 @@ def remove_admin(identifier: str) -> bool:
 
 
 def get_all_admins() -> List[Dict]:
-    """Get all admins."""
-    rows = supabase.select('users', '*', {'role': 'admin'})
+    """Get all admins from telegram_admins table."""
+    rows = supabase.select('telegram_admins', '*')
     return rows
 
 
@@ -422,157 +434,38 @@ def get_movies_by_uploader(admin_id: int, limit: int = 30) -> List[Dict]:
     return [_format_movie_for_bot(m) for m in rows]
 
 
-# --- Monthly Statistics Functions ---
+# --- Weekly Statistics Functions ---
 
-def track_movie_addition(movie_id: int, movie_data: Dict):
-    """Track movie addition for monthly statistics."""
-    month_year = datetime.now().strftime('%Y-%m')
-    try:
-        rows = supabase.select('monthly_stats', '*', {'month_year': month_year})
-        if rows:
-            current = rows[0]
-            supabase.update('monthly_stats', {
-                'movies_added': current.get('movies_added', 0) + 1,
-                'updated_at': datetime.now().isoformat()
-            }, {'month_year': month_year})
-        else:
-            supabase.insert('monthly_stats', {
-                'month_year': month_year,
-                'movies_added': 1,
-                'total_downloads': 0,
-                'total_views': 0,
-            })
-    except Exception as e:
-        logger.error(f"Error tracking movie addition: {e}")
-
-
-def track_movie_addition_for_date(movie_id: int, movie_data: dict, date_obj):
-    """Track movie addition for a specific date."""
-    month_year = date_obj.strftime('%Y-%m')
-    try:
-        rows = supabase.select('monthly_stats', '*', {'month_year': month_year})
-        if rows:
-            current = rows[0]
-            supabase.update('monthly_stats', {
-                'movies_added': current.get('movies_added', 0) + 1,
-            }, {'month_year': month_year})
-        else:
-            supabase.insert('monthly_stats', {
-                'month_year': month_year,
-                'movies_added': 1,
-            })
-    except Exception as e:
-        logger.error(f"Error tracking movie addition for date: {e}")
-
-
-def track_movie_download(movie_id: int):
-    """Track movie download for monthly statistics."""
-    month_year = datetime.now().strftime('%Y-%m')
-    try:
-        rows = supabase.select('monthly_stats', '*', {'month_year': month_year})
-        if rows:
-            current = rows[0]
-            supabase.update('monthly_stats', {
-                'total_downloads': current.get('total_downloads', 0) + 1,
-            }, {'month_year': month_year})
-        else:
-            supabase.insert('monthly_stats', {
-                'month_year': month_year,
-                'total_downloads': 1,
-            })
-    except Exception as e:
-        logger.error(f"Error tracking download: {e}")
-
-
-def get_monthly_stats(month_year: str = None) -> Optional[Dict]:
-    """Get monthly stats."""
-    if not month_year:
-        month_year = datetime.now().strftime('%Y-%m')
-    rows = supabase.select('monthly_stats', '*', {'month_year': month_year})
-    return rows[0] if rows else None
-
-
-def get_all_monthly_stats() -> List[Dict]:
-    """Get all monthly stats."""
-    return supabase.select('monthly_stats', '*', order='month_year.desc')
-
-
-# --- Review Functions (NEW for IntegratedServer) ---
-
-def get_pending_movies() -> List[Dict]:
-    """Get movies pending review."""
-    rows = supabase.select(
-        'movies', '*',
-        {'status': 'pending'},
-        order='created_at.desc'
-    )
-    return [_format_movie_for_bot(m) for m in rows]
-
-
-def approve_movie(movie_id: int) -> bool:
-    """Approve a movie for posting."""
-    try:
-        supabase.update('movies', {'status': 'approved'}, {'id': movie_id})
-        return True
-    except:
-        return False
-
-
-def reject_movie(movie_id: int) -> bool:
-    """Reject a movie."""
-    try:
-        supabase.update('movies', {'status': 'rejected'}, {'id': movie_id})
-        return True
-    except:
-        return False
-
-
-def get_previous_month_date():
-    """Get year and month for previous month."""
-    current_date = datetime.now()
-    if current_date.month == 1:
-        return current_date.year - 1, 12
-    else:
-        return current_date.year, current_date.month - 1
-
-
-def generate_monthly_report(year: int, month: int) -> str:
-    """Generate monthly report for owner (Supabase-backed version)."""
+def generate_weekly_report() -> str:
+    """Generate weekly report for owner based on past 7 days data."""
     try:
         from bot.config import OWNER_ID
-        month_key = f"{year}-{month:02d}"
+        
+        # Calculate date limits for past 7 days
+        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%dT00:00:00')
+        report_title = f"Weekly Report (Past 7 Days)\n\n"
+        report = report_title
 
-        report = f"Monthly Report - {month:02d}/{year}\n\n"
-
-        # Get monthly stats
-        stats_row = get_monthly_stats(month_key)
-
-        # Get all movies added this month
-        # Use date range filtering
-        month_start = f"{year}-{month:02d}-01"
-        if month == 12:
-            month_end = f"{year + 1}-01-01"
-        else:
-            month_end = f"{year}-{month + 1:02d}-01"
-
-        all_movies = supabase.select(
+        # Get all movies added in past 7 days
+        recent_movies = supabase.select(
             'movies', '*',
-            {'created_at': f'gte.{month_start}T00:00:00'},
+            {'created_at': f'gte.{seven_days_ago}'},
             order='created_at.desc'
         )
-        # Filter to this month only
-        month_movies = [m for m in all_movies if m.get('created_at', '') < month_end + 'T00:00:00']
 
-        if not month_movies and not stats_row:
-            return f"Monthly Report - {month:02d}/{year}\n\nNo activity recorded for this month."
+        if not recent_movies:
+            return report + "No activity recorded for the past 7 days."
 
         # Group by uploader
         uploaders = {}
-        for movie in month_movies:
+        for movie in recent_movies:
             uploader_id = movie.get('added_by', 'unknown')
             if uploader_id not in uploaders:
                 uploaders[uploader_id] = []
             uploaders[uploader_id].append(movie)
+
+        total_movies = 0
+        total_downloads = 0
 
         for uploader_id, movies in uploaders.items():
             try:
@@ -585,33 +478,29 @@ def generate_monthly_report(year: int, month: int) -> str:
                 role = "Owner"
             else:
                 admin_info = get_admin_info(uid)
-                name = admin_info.get('first_name', f'Admin-{uploader_id}') if admin_info else f'User-{uploader_id}'
+                name = admin_info.get('short_name', f'Admin-{uploader_id}') if admin_info else f'User-{uploader_id}'
                 role = "Admin"
 
             report += f">> {name} ({role})\n"
-            report += f"  Movies Uploaded This Month: {len(movies)}\n"
+            report += f"  Movies Uploaded: {len(movies)}\n"
 
             movie_titles = [m.get('title', 'Unknown') for m in movies]
-            report += f"  Uploaded Movies: {', '.join(movie_titles)}\n"
+            report += f"  Added: {', '.join(movie_titles)}\n"
 
-            # Total downloads for these movies
-            total_downloads = sum(m.get('downloads', 0) for m in movies)
-            report += f"  Total Downloads This Month: {total_downloads}\n"
-
-            # Total movies ever by this uploader
-            all_by_user = get_movies_by_uploader(uid, limit=1000)
-            report += f"  Total Movies Ever Uploaded: {len(all_by_user)}\n"
+            # Downloads for these movies
+            user_total_dl = sum(m.get('downloads', 0) for m in movies)
+            report += f"  Downloads (these 7 days added movies): {user_total_dl}\n"
             report += "\n" + "-" * 40 + "\n\n"
+            
+            total_movies += len(movies)
+            total_downloads += user_total_dl
 
         # Summary stats
-        if stats_row:
-            report += f"Summary:\n"
-            report += f"  Total Movies Added: {stats_row.get('movies_added', 0)}\n"
-            report += f"  Total Downloads: {stats_row.get('total_downloads', 0)}\n"
-            report += f"  Total Views: {stats_row.get('total_views', 0)}\n"
+        report += f"Summary (Past 7 Days):\n"
+        report += f"  Total Movies Added: {total_movies}\n"
 
         return report
 
     except Exception as e:
-        logger.error(f"Error generating monthly report: {e}")
-        return f"Error generating monthly report: {str(e)}"
+        logger.error(f"Error generating weekly report: {e}")
+        return f"Error generating weekly report: {str(e)}"

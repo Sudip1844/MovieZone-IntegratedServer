@@ -158,8 +158,11 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
             if CHANNEL_USERNAME and movie:
                 try:
                     from bot.utils import format_movie_post
+                    # The user requested exactly the string formatted by format_movie_post 
+                    # with no inline buttons for the actual file downloads.
                     post_text = format_movie_post(movie, CHANNEL_USERNAME)
                     thumbnail = movie.get('thumbnail_file_id')
+                    
                     if thumbnail:
                         await context.bot.send_photo(
                             chat_id=f"@{CHANNEL_USERNAME}",
@@ -236,13 +239,16 @@ def build_application():
     # Import handlers from copied Tgbot code
     from bot.handlers.start_handler import start_handlers
     from bot.handlers.movie_handlers import (
-        request_movie_conv, remove_movie_conv, show_stats_conv,
+        request_movie_conv, remove_movie_conv,
         search_movies, handle_search_query, browse_categories,
         show_requests
     )
     from bot.handlers.callback_handler import callback_query_handler
     from bot.handlers.owner_handlers import owner_handlers
-    from bot.handlers.monthly_handler import monthly_handlers
+    from bot.handlers.weekly_handler import weekly_handlers
+    
+    # Check Manage Admins function from owner handler directly
+    from bot.handlers.owner_handlers import manage_admins
 
     # --- Handler Registration (matching original Tgbot order) ---
 
@@ -250,15 +256,13 @@ def build_application():
     for handler in owner_handlers:
         application.add_handler(handler)
 
-    # 1.1. Monthly report handlers (owner only)
-    for handler in monthly_handlers:
+    # 1.1. Weekly report handlers (owner only)
+    for handler in weekly_handlers:
         application.add_handler(handler)
 
-    # 2. Movie request/remove/stats conversation handlers
-    # NOTE: add_movie_conv_handler REMOVED - movies are now added via website
+    # 2. Movie request/remove conversation handlers
     application.add_handler(request_movie_conv)
     application.add_handler(remove_movie_conv)
-    application.add_handler(show_stats_conv)
 
     # 3. Review & Edit commands (NEW - owner reviews pending movies from website)
     from telegram.ext import CallbackQueryHandler
@@ -271,15 +275,14 @@ def build_application():
     application.add_handler(MessageHandler(filters.Regex("^🔍 Search Movies$"), search_movies))
     application.add_handler(MessageHandler(filters.Regex("^📂 Browse Categories$"), browse_categories))
     application.add_handler(MessageHandler(filters.Regex("^📊 Show Requests$"), show_requests))
+    application.add_handler(MessageHandler(filters.Regex("^👥 Manage Admins$"), manage_admins))
 
-    # 3.2 Monthly Report text button handler
-    from bot.handlers.monthly_handler import monthly_handlers
-    # monthly_handlers are already registered above, but we need the text button too
-    async def monthly_report_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle '📊 Monthly Report' keyboard button."""
-        from bot.handlers.monthly_handler import monthly_report_start
-        await monthly_report_start(update, context)
-    application.add_handler(MessageHandler(filters.Regex("^📊 Monthly Report$"), monthly_report_button))
+    # 3.2 Weekly Report text button handler
+    async def weekly_report_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle '📊 Weekly Report' keyboard button."""
+        from bot.handlers.weekly_handler import show_weekly_report
+        await show_weekly_report(update, context)
+    application.add_handler(MessageHandler(filters.Regex("^📊 Weekly Report$"), weekly_report_button))
 
     # 4. Regular command and message handlers from start_handler
     for handler in start_handlers:
@@ -294,8 +297,8 @@ def build_application():
         & ~filters.Regex("^❓ Help$") & ~filters.Regex("^❌ Cancel$")
         & ~filters.Regex("^🔍 Search Movies$") & ~filters.Regex("^📂 Browse Categories$")
         & ~filters.Regex("^🙏 Request Movie$") & ~filters.Regex("^📊 Show Requests$")
-        & ~filters.Regex("^📊 Show Stats$") & ~filters.Regex("^📋 Review Movies$")
-        & ~filters.Regex("^📊 Monthly Report$") & ~filters.Regex("^🗑️ Remove Movie$")
+        & ~filters.Regex("^👥 Manage Admins$") & ~filters.Regex("^📋 Review Movies$")
+        & ~filters.Regex("^📊 Weekly Report$") & ~filters.Regex("^🗑️ Remove Movie$")
         & ~filters.Regex("^📢 Manage Channels$"),
         handle_search_query
     ))

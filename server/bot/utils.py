@@ -50,16 +50,15 @@ def get_main_keyboard(user_role: str) -> ReplyKeyboardMarkup:
         # Owner: Review movies (added via website), manage channels, stats
         keyboard = [
             [KeyboardButton("📋 Review Movies"), KeyboardButton("🗑️ Remove Movie")],
-            [KeyboardButton("📊 Show Requests"), KeyboardButton("📊 Show Stats")],
-            [KeyboardButton("📊 Monthly Report"), KeyboardButton("📢 Manage Channels")],
+            [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
+            [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
         # Admin: Review movies, stats (movies added via website, admins managed via website)
         keyboard = [
             [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
-            [KeyboardButton("📊 Show Stats"), KeyboardButton("❓ Help")],
-            [KeyboardButton("❌ Cancel")]
+            [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     else:
         # Regular users get basic commands plus cancel
@@ -78,16 +77,15 @@ def get_conversation_keyboard(user_role: str) -> ReplyKeyboardMarkup:
         # Owner: Review movies (added via website), manage channels, stats
         keyboard = [
             [KeyboardButton("📋 Review Movies"), KeyboardButton("🗑️ Remove Movie")],
-            [KeyboardButton("📊 Show Requests"), KeyboardButton("📊 Show Stats")],
-            [KeyboardButton("📊 Monthly Report"), KeyboardButton("📢 Manage Channels")],
+            [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
+            [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
         # Admin: Review movies, stats (movies added via website, admins managed via website)
         keyboard = [
             [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
-            [KeyboardButton("📊 Show Stats"), KeyboardButton("❓ Help")],
-            [KeyboardButton("❌ Cancel")]
+            [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     else:
         # Regular users get basic commands plus cancel

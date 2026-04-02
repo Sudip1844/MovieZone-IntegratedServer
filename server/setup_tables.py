@@ -97,7 +97,7 @@ def main():
     old_tables = ['movie_links', 'quality_movie_links', 'quality_episodes', 
                   'quality_zips', 'api_tokens', 'admin_settings', 'ad_view_sessions']
     new_tables = ['movies', 'users', 'admin_accounts', 'channels', 
-                  'movie_requests', 'monthly_stats']
+                  'movie_requests', 'telegram_admins']
     
     print("\n📊 Checking existing tables...")
     for table in old_tables + new_tables:
@@ -152,6 +152,7 @@ DROP TABLE IF EXISTS admin_accounts CASCADE;
 DROP TABLE IF EXISTS channels CASCADE;
 DROP TABLE IF EXISTS movie_requests CASCADE;
 DROP TABLE IF EXISTS monthly_stats CASCADE;
+DROP TABLE IF EXISTS telegram_admins CASCADE;
 
 -- ====================================
 -- MOVIES - Unified movie data
@@ -245,17 +246,16 @@ CREATE TABLE ad_view_sessions (
 );
 
 -- ====================================
--- MONTHLY_STATS - Statistics
+-- MONTHLY_STATS - Removed
 -- ====================================
-CREATE TABLE monthly_stats (
+
+-- ====================================
+-- TELEGRAM_ADMINS - Admin accounts for bot
+-- ====================================
+CREATE TABLE telegram_admins (
     id SERIAL PRIMARY KEY,
-    month_year TEXT UNIQUE NOT NULL,
-    movies_added INTEGER DEFAULT 0,
-    total_downloads INTEGER DEFAULT 0,
-    total_views INTEGER DEFAULT 0,
-    top_movies JSONB DEFAULT '[]',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    user_id BIGINT UNIQUE NOT NULL,
+    short_name TEXT NOT NULL
 );
 
 -- ====================================
@@ -276,7 +276,7 @@ ALTER TABLE admin_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movie_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ad_view_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE monthly_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE telegram_admins ENABLE ROW LEVEL SECURITY;
 
 -- Allow service role full access
 CREATE POLICY "service_role_all" ON movies FOR ALL USING (true) WITH CHECK (true);
@@ -285,7 +285,7 @@ CREATE POLICY "service_role_all" ON admin_accounts FOR ALL USING (true) WITH CHE
 CREATE POLICY "service_role_all" ON channels FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all" ON movie_requests FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "service_role_all" ON ad_view_sessions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "service_role_all" ON monthly_stats FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "service_role_all" ON telegram_admins FOR ALL USING (true) WITH CHECK (true);
 """
 
 if __name__ == '__main__':

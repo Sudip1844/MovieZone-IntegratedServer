@@ -22,6 +22,7 @@ DROP TABLE IF EXISTS quality_zips CASCADE;
 DROP TABLE IF EXISTS admin_settings CASCADE;
 DROP TABLE IF EXISTS movie_reviews CASCADE; -- NEW: Movie review queue
 DROP TABLE IF EXISTS admin_accounts CASCADE; -- NEW: Manual admin account management
+DROP TABLE IF EXISTS telegram_admins CASCADE; -- NEW: Telegram Bot Admins
 
 -- 2. Create movie_links table with proper Supabase syntax
 CREATE TABLE movie_links (
@@ -93,6 +94,13 @@ CREATE TABLE admin_settings (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- 8. Create telegram_admins table for minimal Telegram Admin info
+CREATE TABLE telegram_admins (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT UNIQUE NOT NULL,
+    short_name TEXT NOT NULL
+);
+
 -- 8. Create ad_view_sessions table for IP-based timer skip system (5-minute skip)
 CREATE TABLE ad_view_sessions (
     id BIGSERIAL PRIMARY KEY,
@@ -137,6 +145,7 @@ ALTER TABLE quality_zips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ad_view_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE telegram_admins ENABLE ROW LEVEL SECURITY;
 
 -- 12. Create policies for public access to movie_links (for redirect functionality)
 CREATE POLICY "Allow public read access to movie_links" ON movie_links
@@ -214,6 +223,10 @@ CREATE POLICY "Allow update access to admin_settings" ON admin_settings
 CREATE POLICY "Allow all access to ad_view_sessions" ON ad_view_sessions
     FOR ALL USING (true);
 
+-- 20. Create policies for telegram_admins
+CREATE POLICY "Allow all access to telegram_admins" ON telegram_admins
+    FOR ALL USING (true);
+
 -- ===== End of Schema ===== 
 -- All tables created with proper indexes and RLS policies
 -- Remember to update your SUPABASE_SERVICE_ROLE_KEY in .env file
@@ -233,6 +246,8 @@ GRANT ALL ON admin_settings TO anon;
 GRANT ALL ON admin_settings TO authenticated;
 GRANT ALL ON ad_view_sessions TO anon;
 GRANT ALL ON ad_view_sessions TO authenticated;
+GRANT ALL ON telegram_admins TO anon;
+GRANT ALL ON telegram_admins TO authenticated;
 GRANT USAGE ON SEQUENCE movie_links_id_seq TO anon;
 GRANT USAGE ON SEQUENCE movie_links_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE quality_movie_links_id_seq TO anon;
@@ -247,6 +262,8 @@ GRANT USAGE ON SEQUENCE admin_settings_id_seq TO anon;
 GRANT USAGE ON SEQUENCE admin_settings_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE ad_view_sessions_id_seq TO anon;
 GRANT USAGE ON SEQUENCE ad_view_sessions_id_seq TO authenticated;
+GRANT USAGE ON SEQUENCE telegram_admins_id_seq TO anon;
+GRANT USAGE ON SEQUENCE telegram_admins_id_seq TO authenticated;
 
 -- 19. Create a function to clean up expired ad view sessions
 CREATE OR REPLACE FUNCTION cleanup_expired_sessions()
