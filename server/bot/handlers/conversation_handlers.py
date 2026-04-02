@@ -359,7 +359,7 @@ async def choose_file_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         reply_keyboard = [['480p', '720p', '1080p'], ["✅ All Done"]]
         await query.edit_message_text(
             "Step 10: Please provide download links. Select a quality to add link:",
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
         )
         return UPLOAD_SINGLE_FILES
     elif file_type == 'series':
@@ -398,7 +398,7 @@ async def upload_single_files(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_keyboard = [['480p', '720p', '1080p'], ["✅ All Done"]]
         await update.message.reply_text(
             f"✅ {quality} download link saved. Select another quality or click 'All Done' when finished.",
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
         )
         return UPLOAD_SINGLE_FILES
 
@@ -433,7 +433,7 @@ async def upload_series_files(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_keyboard = [[f"Upload Episode {episode_num}"], ["✅ All Done"]]
         await update.message.reply_text(
             "Add the next episode link or click 'All Done'.",
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
         )
         return UPLOAD_SERIES_FILES
 
@@ -446,7 +446,11 @@ async def all_files_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("⚠️ You haven't added any download links! Please add at least one download link or /cancel.")
         return UPLOAD_SINGLE_FILES if not movie_data.get('is_series') else UPLOAD_SERIES_FILES
 
-    await update.message.reply_text("Great! All data collected. Generating preview...", reply_markup=ReplyKeyboardRemove())
+    from bot.utils import get_main_keyboard
+    import bot.db as db
+    user_role = db.get_user_role(update.message.from_user.id)
+    main_keyboard = get_main_keyboard(user_role)
+    await update.message.reply_text("Great! All data collected. Generating preview...", reply_markup=main_keyboard)
 
     # Convert sets to lists for JSON serialization
     movie_data['categories'] = list(movie_data['categories'])

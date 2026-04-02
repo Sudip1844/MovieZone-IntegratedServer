@@ -233,6 +233,13 @@
 
         .info-banner { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.3); border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; font-size: 0.85rem; color: var(--accent-hover); }
 
+        /* Validation */
+        .has-error input, .has-error select, .has-error .multi-dropdown-selected, .has-error .file-upload-box {
+            border-color: var(--danger) !important;
+            background: rgba(239, 68, 68, 0.05) !important;
+        }
+        .has-error label { color: var(--danger) !important; }
+
         @media (max-width: 768px) {
             .form-row, .form-row-3 { grid-template-columns: 1fr; }
             .episode-row { grid-template-columns: 50px 1fr 40px; }

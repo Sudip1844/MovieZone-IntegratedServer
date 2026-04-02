@@ -1204,7 +1204,7 @@ async function loadAdmins() {
 }
 async function createAdmin() {
     const id=document.getElementById('newAdminId').value.trim(), pass=document.getElementById('newAdminPass').value.trim(), name=document.getElementById('newAdminName').value.trim();
-    if (!id || !pass) return showToast('ID & password required','error');
+    if (!id || !pass || !name) return showToast('ID, Password, and Display Name are required','error');
     try { const r = await fetch(API+'/api/admin-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminId:id,adminPassword:pass,displayName:name})}); const d=await r.json(); if(d.success){showToast('Created!');['newAdminId','newAdminPass','newAdminName'].forEach(i=>document.getElementById(i).value='');loadAdmins();loadStats();} else showToast(d.error||'Failed','error'); } catch(e){showToast('Error','error');}
 }
 async function toggleAdmin(id,active) { try { await fetch(API+`/api/admin-accounts/${id}/toggle`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isActive:active})}); showToast('Updated'); loadAdmins(); } catch(e){showToast('Failed','error');} }

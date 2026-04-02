@@ -154,11 +154,14 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
                     thumbnail = movie.get('thumbnail_file_id')
                     
                     channels = db.get_all_channels()
+                    from bot.config import DUMP_CHAT_ID
                     if channels:
                         for channel in channels:
                             channel_username = channel.get('channel_id') # We use channel_id for pushing
                             if not channel_username:
                                 continue
+                            if str(channel_username) == str(DUMP_CHAT_ID):
+                                continue # Do not post entire movie to Dump Channel upon approval
                             try:
                                 if thumbnail:
                                     await context.bot.send_photo(
