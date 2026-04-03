@@ -1,0 +1,112 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a, #1a1040, #0f172a);
+            color: #fff; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding-top: 2rem;
+            overflow-x: hidden;
+        }
+        body.scroll-locked { overflow-y: hidden; }
+        .container { text-align: center; padding: 2rem; max-width: 500px; width: 90%; }
+        .movie-icon { font-size: 3rem; margin-bottom: 12px; }
+        .title { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffd700; }
+        .label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem; }
+        .timer-box {
+            background: rgba(255,255,255,0.06); border-radius: 20px;
+            padding: 2rem; margin: 1.5rem 0; backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .timer-text { font-size: 0.9rem; color: #94a3b8; }
+        .timer { font-size: 5rem; font-weight: 700; color: #06b6d4; margin: 0.5rem 0;
+                 text-shadow: 0 0 30px rgba(6,182,212,0.4); }
+        .progress-bar {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 3px; overflow: hidden; margin: 1.2rem 0;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #06b6d4, #6366f1, #ffd700);
+            border-radius: 3px; transition: width 1s linear; width: 0%;
+        }
+        .status-text { font-size: 0.8rem; color: #64748b; }
+        .scroll-down-btn {
+            display: none; padding: 12px 24px; font-size: 1rem;
+            background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; cursor: pointer; text-decoration: none;
+            margin: 1rem auto; transition: background 0.3s;
+        }
+        .scroll-down-btn:hover { background: rgba(255,255,255,0.2); }
+        .scroll-down-btn.show { display: inline-block; animation: bounceIn 0.6s; }
+        .download-btn {
+            display: none; padding: 18px 56px; font-size: 1.1rem;
+            background: linear-gradient(135deg, #06b6d4, #6366f1);
+            color: #fff; border: none; border-radius: 14px;
+            cursor: pointer; font-weight: 700; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 30px rgba(6,182,212,0.3);
+            margin: 1rem auto;
+        }
+        .download-btn:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(6,182,212,0.5); }
+        .download-btn.show { display: inline-block; animation: bounceIn 0.6s; }
+        @keyframes bounceIn {
+            0% { opacity:0; transform:scale(0.3); }
+            50% { transform:scale(1.05); }
+            70% { transform:scale(0.95); }
+            100% { opacity:1; transform:scale(1); }
+        }
+
+        /* Information Sections */
+        .info-container {
+            max-width: 800px;
+            width: 90%;
+            margin: 40px auto;
+            text-align: left;
+        }
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            color: #333;
+        }
+        .info-card h2 {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+        .info-card p {
+            color: #666;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+        .telegram-card {
+            background: linear-gradient(135deg, #0088cc, #0066aa);
+            border-left: 4px solid #0056b3;
+            color: white;
+        }
+        .telegram-card h2 { color: white; }
+        .telegram-card p { color: rgba(255, 255, 255, 0.9); }
+        .telegram-card a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        .telegram-card a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #06b6d4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .footer { margin-top: 2rem; font-size: 0.75rem; color: #475569; padding-bottom: 2rem; }

@@ -205,10 +205,16 @@ CREATE TABLE admin_accounts (
     admin_id TEXT UNIQUE NOT NULL,
     admin_password TEXT NOT NULL,
     display_name TEXT,
+    role TEXT DEFAULT 'admin',
     is_active BOOLEAN DEFAULT TRUE,
     created_by TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Insert Default Owner Credentials (do not hardcode in backend env)
+INSERT INTO admin_accounts (admin_id, admin_password, display_name, role) 
+VALUES ('sbiswas1844', 'save@184455', 'Owner', 'owner')
+ON CONFLICT (admin_id) DO NOTHING;
 
 -- ====================================
 -- CHANNELS - Managed Telegram channels
