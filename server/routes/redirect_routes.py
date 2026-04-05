@@ -32,89 +32,19 @@ def get_link_info(short_id):
         import json as json_mod
 
         movie = None
-        target_link = ''
-        link_label = 'Download'
-        cols = 'id, title, ads_enabled, short_id, short_ids, download_type, original_link, quality_480p, quality_720p, quality_1080p, episodes, views'
+        cols = 'id, title, ads_enabled, short_id, download_type, original_link, quality_480p, quality_720p, quality_1080p, episodes, views'
 
-        # 1. Check main short_id field
         rows = supabase.select('movies', cols, {'short_id': short_id})
         if rows:
             movie = rows[0]
-            dtype = movie.get('download_type', 'single')
-            if dtype == 'single':
-                target_link = movie.get('original_link', '')
-            elif dtype == 'quality':
-                target_link = movie.get('quality_720p') or movie.get('quality_480p') or movie.get('quality_1080p', '')
-            else:
-                target_link = movie.get('original_link', '')
-
-        # 2. If not found, search short_ids JSON across all movies
-        if not movie:
-            all_movies = supabase.select('movies', cols, {'short_ids::text': f'ilike.*{short_id}*'})
-            
-            if not all_movies:
-                tiny_movies = supabase.select('movies', 'id, short_ids')
-                found_id = None
-                for tm in tiny_movies:
-                    sraw = tm.get('short_ids', '{}')
-                    if sraw and short_id in str(sraw):
-                        found_id = tm['id']
-                        break
-                if found_id:
-                    all_movies = supabase.select('movies', cols, {'id': found_id})
-
-            for m in all_movies:
-                sids_raw = m.get('short_ids', '{}')
-                try:
-                    sids = json_mod.loads(sids_raw) if isinstance(sids_raw, str) else (sids_raw or {})
-                except:
-                    sids = {}
-                for key, sid in sids.items():
-                    if sid == short_id:
-                        movie = m
-                        # Resolve the actual link based on key
-                        if key == 'original':
-                            target_link = m.get('original_link', '')
-                            link_label = 'Download'
-                        elif key in ('480p', 'zip_480p'):
-                            target_link = m.get('quality_480p', '')
-                            link_label = '480p Download'
-                        elif key in ('720p', 'zip_720p'):
-                            target_link = m.get('quality_720p', '')
-                            link_label = '720p Download'
-                        elif key in ('1080p', 'zip_1080p'):
-                            target_link = m.get('quality_1080p', '')
-                            link_label = '1080p Download'
-                        elif key.startswith('e') and '_' in key:
-                            # Episode link e.g. e1_480p
-                            ep_num, quality = key.split('_', 1)
-                            link_label = f'{ep_num.upper()} {quality} Download'
-                            try:
-                                eps = json_mod.loads(m.get('episodes', '[]')) if isinstance(m.get('episodes'), str) else (m.get('episodes') or [])
-                                ep_n = int(ep_num[1:])
-                                for ep in eps:
-                                    if ep.get('episodeNumber') == ep_n:
-                                        target_link = ep.get(f'quality{quality}') or ep.get(f'quality{quality.capitalize()}', '')
-                                        break
-                            except:
-                                pass
-                        break
-                if movie:
-                    break
 
         if not movie:
-            return jsonify({"error": "Movie not found"}), 404
+            return jsonify({'error': 'Link not found or expired'}), 404
 
         # Increment views
         supabase.update('movies', {'views': (movie.get('views', 0) or 0) + 1}, {'id': movie['id']})
 
-        return jsonify({
-            'success': True,
-            'title': movie.get('title'),
-            'target_link': target_link,
-            'link_label': link_label,
-            'ads_enabled': movie.get('ads_enabled', True)
-        })
+        return jsonify(movie)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

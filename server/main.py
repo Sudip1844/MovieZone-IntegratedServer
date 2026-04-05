@@ -52,15 +52,8 @@ def run_flask():
 
 
 def schedule_user_message_cleanup(context, chat_id: int, message_id: int, user_role: str):
-    """Schedule user message cleanup based on role.
-    Called from bot handlers (start_handler.py) to auto-delete messages after 24h.
-    """
-    try:
-        from bot.bot_main import schedule_message_deletion
-        # Delete everything after 24 hours for all roles
-        schedule_message_deletion(context, chat_id, message_id, 86400)
-    except Exception as e:
-        logging.getLogger(__name__).warning(f"Could not schedule message cleanup: {e}")
+    """Message cleanup is disabled for now."""
+    pass
 
 
 def run_bot():

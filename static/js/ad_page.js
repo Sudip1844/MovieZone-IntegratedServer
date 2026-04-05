@@ -31,21 +31,26 @@ let timerFinished = false;
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                // If ads are disabled, redirect instantly regardless of timer
-                if (data.ads_enabled === false) {
-                    document.body.classList.remove('scroll-locked');
-                    window.location.href = data.target_link;
-                    return;
-                }
-
                 linkData = data;
                 document.getElementById('pageTitle').textContent = data.title || "Unknown Movie";
-                document.getElementById('pageLabel').textContent = data.link_label || "Download";
-                document.getElementById('btnLabel').textContent = data.link_label || "Download";
-                document.getElementById('downloadBtn').href = data.target_link;
+                document.getElementById('pageLabel').textContent = "Download Options";
+
+                const isSingle = data.download_type === 'single';
+
+                // If ads are disabled, finish timer instantly
+                if (data.ads_enabled === false) {
+                    timerFinished = true;
+                    if (isSingle) {
+                        document.body.classList.remove('scroll-locked');
+                        window.location.href = data.original_link || data.target_link;
+                        return;
+                    }
+                }
 
                 // If timer already finished by the time data arrives, show download button now
-                if (timerFinished) {
+                if (timerFinished && !isSingle) {
+                    showDownloadButton();
+                } else if (timerFinished && isSingle) {
                     showDownloadButton();
                 }
 
@@ -55,7 +60,6 @@ let timerFinished = false;
                 document.getElementById('pageTitle').style.color = "#ef4444";
                 document.getElementById('pageLabel').textContent = err.message;
                 
-                // If timer is already done, update status
                 if (timerFinished) {
                     document.getElementById('statusText').textContent = '❌ Failed to get link.';
                 }
@@ -93,7 +97,61 @@ let timerFinished = false;
 
         function showDownloadButton() {
             document.getElementById('statusText').textContent = '🎉 Your download is ready!';
-            document.getElementById('downloadBtn').classList.add('show');
             document.body.classList.remove('scroll-locked');
             document.getElementById('scrollDownBtn').classList.add('show');
+            
+            const container = document.getElementById('downloadLinksContainer');
+            container.innerHTML = ''; // clear
+
+            if (!linkData) return;
+
+            // Generate header
+            let html = `
+                <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:25px;margin:40px auto;max-width:600px;text-align:center;">
+                    <h2 style="margin:0 0 20px 0;font-size:22px;color:var(--text);">${linkData.title}</h2>
+                    <div style="display:flex;flex-direction:column;gap:15px;align-items:center;">
+            `;
+
+            if (linkData.download_type === 'single') {
+                html += `
+                    <a href="${linkData.original_link || '#'}" class="download-btn show" style="width:100%;max-width:300px;">
+                        📥 Download Link
+                    </a>
+                `;
+            } else if (linkData.download_type === 'quality' || linkData.download_type === 'zip') {
+                const isZip = linkData.download_type === 'zip';
+                ['480p', '720p', '1080p'].forEach(q => {
+                    const l = linkData[`quality_${q}`];
+                    if (l) {
+                        html += `
+                            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;background:rgba(255,255,255,0.05);padding:10px 15px;border-radius:8px;">
+                                <span style="font-weight:600;">${isZip ? 'Zip ' : ''}${q} Quality</span>
+                                <a href="${l}" class="download-btn show" style="padding:10px 20px;font-size:14px;margin:0;">📥 Download</a>
+                            </div>
+                        `;
+                    }
+                });
+            } else if (linkData.download_type === 'episode') {
+                let eps = [];
+                try { eps = typeof linkData.episodes === 'string' ? JSON.parse(linkData.episodes) : linkData.episodes; } catch(e){}
+                
+                (eps || []).forEach(ep => {
+                    html += `<div style="width:100%;text-align:left;margin-top:10px;"><h3 style="margin:0 0 10px 0;font-size:16px;border-bottom:1px solid var(--border);padding-bottom:5px;">Episode ${ep.episodeNumber || ''} ${ep.episodeTitle ? '- ' + ep.episodeTitle : ''}</h3></div>`;
+                    
+                    ['480p', '720p', '1080p'].forEach(q => {
+                        const l = ep[`quality${q.charAt(0).toUpperCase() + q.slice(1)}`] || ep[`quality${q}`];
+                        if (l) {
+                            html += `
+                                <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px;background:rgba(255,255,255,0.03);padding:10px 15px;border-radius:8px;">
+                                    <span style="font-weight:600;font-size:14px;">${q}</span>
+                                    <a href="${l}" class="download-btn show" style="padding:8px 16px;font-size:13px;margin:0;">📥 Download</a>
+                                </div>
+                            `;
+                        }
+                    });
+                });
+            }
+
+            html += `</div></div>`;
+            container.innerHTML = html;
         }

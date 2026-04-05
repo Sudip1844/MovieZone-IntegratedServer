@@ -77,43 +77,15 @@ def create_movie_link():
             sid = generate_short_id()
             short_ids['original'] = sid
             short_urls['original'] = f"{host}/m/{sid}"
-        elif dtype == 'quality':
-            for q in ['480p', '720p', '1080p']:
-                key = f'quality{q}'
-                camel = f'quality_{q}'
-                if data.get(key) or data.get(camel):
-                    sid = generate_short_id()
-                    short_ids[q] = sid
-                    short_urls[q] = f"{host}/m/{sid}"
-        elif dtype == 'zip':
-            for q in ['480p', '720p', '1080p']:
-                key = f'quality{q}'
-                camel = f'quality_{q}'
-                if data.get(key) or data.get(camel):
-                    sid = generate_short_id()
-                    short_ids[f'zip_{q}'] = sid
-                    short_urls[f'zip_{q}'] = f"{host}/m/{sid}"
-        elif dtype == 'episode':
-            # Episodes get short IDs per episode per quality
-            episodes_data = data.get('episodes')
-            if episodes_data:
-                import json
-                eps = json.loads(episodes_data) if isinstance(episodes_data, str) else episodes_data
-                for ep in eps:
-                    ep_num = ep.get('episodeNumber', 1)
-                    for q in ['480p', '720p', '1080p']:
-                        qkey = f'quality{q.capitalize()}' if q != '480p' else 'quality480p'
-                        if ep.get(qkey) or ep.get(f'quality{q}'):
-                            sid = generate_short_id()
-                            short_ids[f'e{ep_num}_{q}'] = sid
-                            short_urls[f'e{ep_num}_{q}'] = f"{host}/m/{sid}"
+        # Removed multiple short_ids generation for quality/zip/episode.
+        # We now only use the master short_id for the whole movie.
 
         insert_data = {
             'title': data.get('title', data.get('movieName', data.get('movie_name', ''))),
             'original_link': data.get('originalLink', data.get('original_link', '')),
             'thumbnail_file_id': thumbnail_file_id,
             'short_id': short_id,
-            'short_ids': json_mod.dumps(short_ids),
+            'short_ids': short_ids,
             'download_type': dtype,
             'quality_480p': data.get('quality480p', data.get('quality_480p')),
             'quality_720p': data.get('quality720p', data.get('quality_720p')),
@@ -143,8 +115,9 @@ def create_movie_link():
         result = None
         try:
             result = supabase.insert('movies', insert_data)
-        except Exception:
-            # short_ids column might not exist yet, try without it
+        except Exception as e:
+            # If it fails, log the error and try without short_ids for backward compatibility
+            print(f"Insert failed with short_ids: {e}. Trying without...")
             insert_data.pop('short_ids', None)
             result = supabase.insert('movies', insert_data)
 
@@ -152,8 +125,6 @@ def create_movie_link():
             return jsonify({
                 'success': True,
                 'shortId': short_id,
-                'shortIds': short_ids,
-                'shortUrls': short_urls,
                 'shortUrl': f"{host}/m/{short_id}",
                 'id': result.get('id'),
                 'movie': result

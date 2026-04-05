@@ -174,12 +174,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         help_text = """❓ Owner Help & Commands
 
 Available Features:
-• ➕ Add Movie - Add new movie or series
+• 📋 Review Movies - Review pending movies submitted from website
 • 📊 Show Requests - View user movie requests  
 • 👥 Manage Admins - Add or remove admins
 • 📢 Manage Channels - Add or remove channels
-• 🗑️ Remove Movie - Delete movies from database
-• 📈 Show Stats - View movie statistics
+• 🗑️ Remove Movie - Delete a movie quickly
+• 📊 Weekly Report - Generate performance reports
 
 You have full access to all bot features and can manage admins and channels."""
         
@@ -187,12 +187,10 @@ You have full access to all bot features and can manage admins and channels."""
         help_text = """❓ Admin Help & Commands
 
 Available Features:
-• ➕ Add Movie - Add new movie or series
 • 📊 Show Requests - View and manage user requests
-• 🗑️ Remove Movie - Delete movies from database  
-• 📈 Show Stats - View movie statistics
 
-You can manage movies and handle user requests."""
+You can handle user movie requests from the bot. 
+Please log in to the MovieZone Admin Panel website to add new movies!"""
         
     else:
         help_text = """❓ How to Use MovieZone Bot

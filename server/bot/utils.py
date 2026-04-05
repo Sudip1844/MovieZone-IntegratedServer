@@ -55,9 +55,9 @@ def get_main_keyboard(user_role: str) -> ReplyKeyboardMarkup:
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
-        # Admin: Review movies, stats (movies added via website, admins managed via website)
+        # Admin: stats, requests (movies added via website, admins managed via website)
         keyboard = [
-            [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
+            [KeyboardButton("📊 Show Requests")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     else:
@@ -82,9 +82,9 @@ def get_conversation_keyboard(user_role: str) -> ReplyKeyboardMarkup:
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
-        # Admin: Review movies, stats (movies added via website, admins managed via website)
+        # Admin: stats, requests (movies added via website, admins managed via website)
         keyboard = [
-            [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
+            [KeyboardButton("📊 Show Requests")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     else:

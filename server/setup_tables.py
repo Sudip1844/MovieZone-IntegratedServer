@@ -176,6 +176,7 @@ CREATE TABLE movies (
     from_episode INTEGER,
     to_episode INTEGER,
     short_id TEXT UNIQUE,
+    short_ids JSONB,
     status TEXT DEFAULT 'pending',
     views INTEGER DEFAULT 0,
     downloads INTEGER DEFAULT 0,

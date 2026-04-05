@@ -47,7 +47,7 @@ def admin_login():
 def get_admin_config():
     """Get admin config (owner ID for frontend)"""
     return jsonify({
-        'adminId': OWNER_LOGIN_ID,
+        'adminId': 'owner',
         'hasCredentials': True
     })
 
@@ -56,7 +56,7 @@ def get_admin_config():
 def get_admin_accounts():
     """Get all admin accounts (owner only)"""
     try:
-        accounts = supabase.select('admin_accounts', 'id,admin_id,display_name,is_active,created_at')
+        accounts = supabase.select('admin_accounts', 'id,admin_id,admin_password,display_name,is_active,created_at')
         return jsonify(accounts)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -79,7 +79,7 @@ def create_admin_account():
             'admin_password': password,
             'display_name': display_name,
             'is_active': True,
-            'created_by': OWNER_LOGIN_ID
+            'created_by': 'owner'
         })
 
         return jsonify({

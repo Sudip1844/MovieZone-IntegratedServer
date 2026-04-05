@@ -132,7 +132,7 @@ function validateForm() {
     else if (type === 'episode') hasLink = document.querySelectorAll('.episode-row').length > 0;
     
     const btn = document.getElementById('addBtn');
-    if(btn) btn.disabled = !(thumb && title && cats && langs && hasLink);
+    // Button is no longer disabled. Validation is handled on click.
 }
 
 // Close dropdowns if clicked outside
@@ -235,11 +235,27 @@ function resetAddForm() {
 
 async function addMovie() {
     const title = document.getElementById('movieTitle').value.trim();
-    if (!title) { showFieldErrors(); return showToast('Fill all required fields', 'error'); }
-
     const type = document.getElementById('downloadType').value;
     const categories = getSelectedChips('categoriesContainer');
     const languages = getSelectedChips('languagesContainer');
+    const thumbnailFile = document.getElementById('movieThumbnail').files[0];
+    
+    let hasLink = false;
+    if (type === 'single') hasLink = document.getElementById('singleLink').value.trim() !== '';
+    else if (type === 'quality') hasLink = ['q480','q720','q1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'zip') hasLink = document.getElementById('zipFrom').value.trim() !== '' && document.getElementById('zipTo').value.trim() !== '' && ['zip480','zip720','zip1080'].some(id => document.getElementById(id).value.trim() !== '');
+    else if (type === 'episode') hasLink = document.querySelectorAll('.episode-row').length > 0;
+
+    if (!title || categories.length === 0 || languages.length === 0 || !thumbnailFile || !hasLink) {
+        showFieldErrors();
+        let missed = [];
+        if (!title) missed.push("Movie Title");
+        if (categories.length === 0) missed.push("Categories");
+        if (languages.length === 0) missed.push("Languages");
+        if (!hasLink) missed.push("Download Link(s)");
+        if (!thumbnailFile) missed.push("Thumbnail");
+        return showToast("Required: " + missed.join(', '), 'error');
+    }
     const releaseYear = document.getElementById('releaseYear').value.trim() || 'N/A';
     const runtime = document.getElementById('runtime').value.trim() || 'N/A';
     const imdbRating = document.getElementById('imdbRating').value.trim() || 'N/A';
@@ -281,8 +297,11 @@ async function addMovie() {
         if (!body.quality480p && !body.quality720p && !body.quality1080p) return showToast('Enter at least one zip link', 'error');
     }
 
-    const thumbnailFile = document.getElementById('movieThumbnail').files[0];
-    if (!thumbnailFile) return showToast('Please upload a movie thumbnail', 'error');
+    // removed redeclaration of thumbnailFile here
+    const overlay = document.createElement('div');
+    overlay.id = 'uploadOverlay';
+    overlay.innerHTML = '<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-size:24px;"><div>Uploading Movie & Generating Links...</div><div class="loader" style="margin-top:20px;border-width:4px;width:40px;height:40px;border-color:#fff transparent transparent transparent;border-style:solid;border-radius:50%;animation:spin 1s linear infinite;"></div><style>@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style></div>';
+    document.body.appendChild(overlay);
 
     let formData = new FormData();
     formData.append('data', JSON.stringify(body));
@@ -291,12 +310,25 @@ async function addMovie() {
     try {
         const r = await fetch(API+'/api/movie-links', {method:'POST', body: formData});
         const d = await r.json();
+        
+        if (document.getElementById('uploadOverlay')) document.getElementById('uploadOverlay').remove();
+
         if (d.success || d.shortUrl) {
             const container = document.getElementById('addLinksContainer');
             let html = '';
             if (d.shortUrls && Object.keys(d.shortUrls).length > 0) {
                 for (const [key, url] of Object.entries(d.shortUrls)) {
-                    html += `<div class="link-item"><span>${key}: ${url}</span><button class="copy-icon" onclick="copyUrl('${url}')">📋</button></div>`;
+                    let label = key;
+                    if (key.startsWith('zip_')) label = `Zip: ${key.replace('zip_', '')}`;
+                    else if (key.startsWith('e')) {
+                        const parts = key.match(/e(\d+)_(.+)/);
+                        if (parts) label = `Ep ${parts[1]} (${parts[2]})`;
+                    } else if (['480p','720p','1080p'].includes(key)) {
+                        label = `Quality: ${key}`;
+                    } else if (key === 'original') {
+                        label = 'Link';
+                    }
+                    html += `<div class="link-item"><span style="color:var(--primary);font-weight:bold;margin-right:8px;">${label}:</span><span>${url}</span><button class="copy-icon" style="margin-left:auto" onclick="copyUrl('${url}')">📋</button></div>`;
                 }
             } else {
                 html = `<div class="link-item"><span>${d.shortUrl || 'Submitted'}</span></div>`;
@@ -310,8 +342,13 @@ async function addMovie() {
             setTimeout(() => {
                 document.getElementById('addResult').classList.remove('show');
             }, 15000);
-        } else showToast(d.error || 'Failed', 'error');
-    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+        } else {
+            showToast(d.error || 'Failed', 'error');
+        }
+    } catch(e) { 
+        if (document.getElementById('uploadOverlay')) document.getElementById('uploadOverlay').remove();
+        showToast('Error: ' + e.message, 'error'); 
+    }
 }
 
 function copyUrl(url) {
@@ -434,8 +471,9 @@ function deleteMovie(id) {
     document.getElementById('deleteConfirmText').textContent = m ? `"${m.title}" will be permanently deleted.` : 'This movie will be permanently deleted.';
     document.getElementById('deleteConfirmModal').classList.add('show');
     document.getElementById('deleteConfirmYes').onclick = async () => {
+        const idToDelete = pendingDeleteId;
         closeDeleteConfirm();
-        try { await fetch(API+`/api/movie-links/${pendingDeleteId}`,{method:'DELETE'}); showToast('Deleted'); loadMyMovies(); loadMyStats(); } catch(e) { showToast('Failed','error'); }
+        try { await fetch(API+`/api/movie-links/${idToDelete}`,{method:'DELETE'}); showToast('Deleted'); loadMyMovies(); loadMyStats(); } catch(e) { showToast('Failed','error'); }
     };
 }
 function closeDeleteConfirm() { document.getElementById('deleteConfirmModal').classList.remove('show'); pendingDeleteId = null; }
