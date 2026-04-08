@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS movie_links CASCADE;
 DROP TABLE IF EXISTS quality_movie_links CASCADE;
 DROP TABLE IF EXISTS quality_episodes CASCADE;
 DROP TABLE IF EXISTS quality_zips CASCADE;
-DROP TABLE IF EXISTS admin_settings CASCADE;
+DROP TABLE IF EXISTS owner_settings CASCADE;
 DROP TABLE IF EXISTS movie_reviews CASCADE; -- NEW: Movie review queue
 DROP TABLE IF EXISTS admin_accounts CASCADE; -- NEW: Manual admin account management
 DROP TABLE IF EXISTS telegram_admins CASCADE; -- NEW: Telegram Bot Admins
@@ -86,8 +86,8 @@ CREATE TABLE api_tokens (
     last_used TIMESTAMP WITH TIME ZONE
 );
 
--- 7. Create admin_settings table for login credentials
-CREATE TABLE admin_settings (
+-- 7. Create owner_settings table for login credentials
+CREATE TABLE owner_settings (
     id BIGSERIAL PRIMARY KEY,
     admin_id TEXT NOT NULL UNIQUE,
     admin_password TEXT NOT NULL,
@@ -99,6 +99,18 @@ CREATE TABLE telegram_admins (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT UNIQUE NOT NULL,
     short_name TEXT NOT NULL
+);
+
+-- 8b. Create admin_accounts table for Owner + Admin accounts (managed via Owner panel)
+CREATE TABLE admin_accounts (
+    id BIGSERIAL PRIMARY KEY,
+    admin_id TEXT NOT NULL UNIQUE,
+    admin_password TEXT NOT NULL,
+    display_name TEXT DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'admin',  -- 'owner' or 'admin'
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_by TEXT DEFAULT 'system',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- 8. Create ad_view_sessions table for IP-based timer skip system (5-minute skip)
@@ -129,10 +141,15 @@ CREATE INDEX idx_ad_view_sessions_short_id ON ad_view_sessions(short_id);
 -- Create unique constraint to prevent duplicate sessions for same IP and link
 CREATE UNIQUE INDEX idx_ad_view_sessions_unique ON ad_view_sessions(ip_address, short_id, link_type);
 
--- 10. Insert default admin credentials
-INSERT INTO admin_settings (admin_id, admin_password) 
+-- 10. Insert default OWNER credentials (permanent, NOT visible in any UI panel)
+-- Owner credentials are stored in owner_settings table, separate from admin_accounts.
+-- Only editable via Supabase dashboard or direct SQL access.
+INSERT INTO owner_settings (admin_id, admin_password) 
 VALUES ('sbiswas1844', 'save@184455') 
 ON CONFLICT (admin_id) DO NOTHING;
+
+-- NOTE: admin_accounts table is for Admins ONLY (created by Owner via web panel).
+-- NEVER put Owner credentials in admin_accounts — it would expose them in the UI.
 
 -- 11. API tokens table is ready for manual creation through admin panel
 -- No sample tokens inserted - create them through the admin interface
@@ -143,9 +160,10 @@ ALTER TABLE quality_movie_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quality_episodes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quality_zips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_tokens ENABLE ROW LEVEL SECURITY;
-ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE owner_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ad_view_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE telegram_admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_accounts ENABLE ROW LEVEL SECURITY;
 
 -- 12. Create policies for public access to movie_links (for redirect functionality)
 CREATE POLICY "Allow public read access to movie_links" ON movie_links
@@ -212,11 +230,11 @@ CREATE POLICY "Allow update access to api_tokens" ON api_tokens
 CREATE POLICY "Allow delete access to api_tokens" ON api_tokens
     FOR DELETE USING (true);
 
--- 18. Create policies for admin_settings
-CREATE POLICY "Allow read access to admin_settings" ON admin_settings
+-- 18. Create policies for owner_settings
+CREATE POLICY "Allow read access to owner_settings" ON owner_settings
     FOR SELECT USING (true);
 
-CREATE POLICY "Allow update access to admin_settings" ON admin_settings
+CREATE POLICY "Allow update access to owner_settings" ON owner_settings
     FOR UPDATE USING (true);
 
 -- 19. Create policies for ad_view_sessions
@@ -225,6 +243,10 @@ CREATE POLICY "Allow all access to ad_view_sessions" ON ad_view_sessions
 
 -- 20. Create policies for telegram_admins
 CREATE POLICY "Allow all access to telegram_admins" ON telegram_admins
+    FOR ALL USING (true);
+
+-- 20b. Create policies for admin_accounts
+CREATE POLICY "Allow all access to admin_accounts" ON admin_accounts
     FOR ALL USING (true);
 
 -- ===== End of Schema ===== 
@@ -242,12 +264,14 @@ GRANT ALL ON quality_zips TO anon;
 GRANT ALL ON quality_zips TO authenticated;
 GRANT ALL ON api_tokens TO anon;
 GRANT ALL ON api_tokens TO authenticated;
-GRANT ALL ON admin_settings TO anon;
-GRANT ALL ON admin_settings TO authenticated;
+GRANT ALL ON owner_settings TO anon;
+GRANT ALL ON owner_settings TO authenticated;
 GRANT ALL ON ad_view_sessions TO anon;
 GRANT ALL ON ad_view_sessions TO authenticated;
 GRANT ALL ON telegram_admins TO anon;
 GRANT ALL ON telegram_admins TO authenticated;
+GRANT ALL ON admin_accounts TO anon;
+GRANT ALL ON admin_accounts TO authenticated;
 GRANT USAGE ON SEQUENCE movie_links_id_seq TO anon;
 GRANT USAGE ON SEQUENCE movie_links_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE quality_movie_links_id_seq TO anon;
@@ -258,12 +282,14 @@ GRANT USAGE ON SEQUENCE quality_zips_id_seq TO anon;
 GRANT USAGE ON SEQUENCE quality_zips_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE api_tokens_id_seq TO anon;
 GRANT USAGE ON SEQUENCE api_tokens_id_seq TO authenticated;
-GRANT USAGE ON SEQUENCE admin_settings_id_seq TO anon;
-GRANT USAGE ON SEQUENCE admin_settings_id_seq TO authenticated;
+GRANT USAGE ON SEQUENCE owner_settings_id_seq TO anon;
+GRANT USAGE ON SEQUENCE owner_settings_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE ad_view_sessions_id_seq TO anon;
 GRANT USAGE ON SEQUENCE ad_view_sessions_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE telegram_admins_id_seq TO anon;
 GRANT USAGE ON SEQUENCE telegram_admins_id_seq TO authenticated;
+GRANT USAGE ON SEQUENCE admin_accounts_id_seq TO anon;
+GRANT USAGE ON SEQUENCE admin_accounts_id_seq TO authenticated;
 
 -- 19. Create a function to clean up expired ad view sessions
 CREATE OR REPLACE FUNCTION cleanup_expired_sessions()

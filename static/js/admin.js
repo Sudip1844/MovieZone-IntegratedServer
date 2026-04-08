@@ -13,7 +13,7 @@ const LANGUAGES = ["Bengali","Hindi","English","Tamil","Telugu","Korean","Gujara
 
 function renderChips(id, items) {
     document.getElementById(id).innerHTML = items.map(i =>
-        `<button class="chip" onclick="this.classList.toggle('selected')" data-value="${i}">${i}</button>`
+        `<button class="chip" onclick="this.classList.toggle('selected'); clearErrorFromChip(this)" data-value="${i}">${i}</button>`
     ).join('');
 }
 function getSelectedChips(id) {
@@ -81,9 +81,11 @@ function renumberEpisodes() {
 }
 addEpisodeRow();
 
-// Validation logic for Add Movie
+// Validation logic for Add Movie - auto-clear errors on input
 document.addEventListener('input', (e) => {
     if (['movieThumbnail','movieTitle','singleLink','q480','q720','q1080','zip480','zip720','zip1080'].includes(e.target.id)) {
+        const fg = e.target.closest('.form-group');
+        if (fg) fg.classList.remove('has-error');
         validateForm();
     }
 });
@@ -100,6 +102,10 @@ function clearError(fgId) {
     const el = document.getElementById(fgId);
     if (el) el.classList.remove('has-error');
     validateForm();
+}
+function clearErrorFromChip(chipEl) {
+    const fg = chipEl.closest('.form-group');
+    if (fg) fg.classList.remove('has-error');
 }
 function showFieldErrors() {
     const thumb = document.getElementById('movieThumbnail').files.length > 0;

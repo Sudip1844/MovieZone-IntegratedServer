@@ -218,8 +218,8 @@
         .badge-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
 
         /* Toast */
-        .toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; padding: 14px 24px; border-radius: 12px; font-size: 0.9rem; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
-        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); z-index: 200; padding: 16px 32px; border-radius: 14px; font-size: 1rem; font-weight: 600; opacity: 0; transition: all 0.3s ease; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; max-width: 90%; pointer-events: none; }
+        .toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         .toast-success { background: var(--success); color: #000; }
         .toast-error { background: var(--danger); color: #fff; }
 

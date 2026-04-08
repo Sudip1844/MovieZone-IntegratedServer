@@ -14,9 +14,10 @@ const LANGUAGES = ["Bengali","Hindi","English","Tamil","Telugu","Korean","Gujara
 // Render chips
 function renderChips(containerId, items) {
     document.getElementById(containerId).innerHTML = items.map(item =>
-        `<button class="chip" onclick="this.classList.toggle('selected')" data-value="${item}">${item}</button>`
+        `<button class="chip" onclick="this.classList.toggle('selected'); clearErrorFromChip(this)" data-value="${item}">${item}</button>`
     ).join('');
 }
+
 function getSelectedChips(containerId) {
     return Array.from(document.querySelectorAll(`#${containerId} .chip.selected`)).map(c => c.dataset.value);
 }
@@ -96,9 +97,12 @@ function renumberEpisodes() {
 }
 addEpisodeRow();
 
-// Validation logic for Add Movie
+// Validation logic for Add Movie - auto-clear errors on input
 document.addEventListener('input', (e) => {
     if (['movieThumbnail','movieTitle','singleLink','q480','q720','q1080','zip480','zip720','zip1080'].includes(e.target.id)) {
+        // Clear red error border from parent form-group
+        const fg = e.target.closest('.form-group');
+        if (fg) fg.classList.remove('has-error');
         validateForm();
     }
 });
@@ -115,6 +119,11 @@ function clearError(fgId) {
     const el = document.getElementById(fgId);
     if (el) el.classList.remove('has-error');
     validateForm();
+}
+// Clear error from chip's parent form-group when chips are toggled
+function clearErrorFromChip(chipEl) {
+    const fg = chipEl.closest('.form-group');
+    if (fg) fg.classList.remove('has-error');
 }
 function showFieldErrors() {
     const thumb = document.getElementById('movieThumbnail').files.length > 0;

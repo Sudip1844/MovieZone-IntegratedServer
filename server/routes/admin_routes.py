@@ -19,7 +19,23 @@ def admin_login():
         if not login_id or not password:
             return jsonify({'error': 'ID and password required'}), 400
 
-        # Check admin accounts table directly (for both owner and admin)
+        # 1. Check owner_settings table FIRST (permanent Owner credentials)
+        # Owner credentials are stored separately and never visible in any UI
+        settings_rows = supabase.select('owner_settings', '*', {
+            'admin_id': login_id
+        })
+        if settings_rows:
+            setting = settings_rows[0]
+            if setting.get('admin_password') == password:
+                return jsonify({
+                    'success': True,
+                    'role': 'owner',
+                    'adminId': login_id,
+                    'displayName': 'Owner',
+                    'message': 'Owner login successful'
+                })
+
+        # 2. Check admin_accounts table (admins created via Owner panel)
         rows = supabase.select('admin_accounts', '*', {
             'admin_id': login_id
         })
@@ -28,14 +44,13 @@ def admin_login():
             if not admin.get('is_active', False):
                 return jsonify({'error': 'Account is disabled'}), 401
             
-            # Verify password securely on backend side
             if admin.get('admin_password') == password:
                 return jsonify({
                     'success': True,
-                    'role': admin.get('role', 'admin'), # Role is now fetched from the database
+                    'role': 'admin',
                     'adminId': login_id,
-                    'displayName': admin.get('display_name', 'Owner' if admin.get('role') == 'owner' else ''),
-                    'message': f"{admin.get('role', 'Admin').title()} login successful"
+                    'displayName': admin.get('display_name', ''),
+                    'message': 'Admin login successful'
                 })
 
         return jsonify({'error': 'Invalid credentials'}), 401
