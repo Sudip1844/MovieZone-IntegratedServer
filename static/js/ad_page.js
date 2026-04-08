@@ -48,9 +48,7 @@ let timerFinished = false;
                 }
 
                 // If timer already finished by the time data arrives, show download button now
-                if (timerFinished && !isSingle) {
-                    showDownloadButton();
-                } else if (timerFinished && isSingle) {
+                if (timerFinished) {
                     showDownloadButton();
                 }
 
@@ -139,7 +137,7 @@ let timerFinished = false;
                     html += `<div style="width:100%;text-align:left;margin-top:10px;"><h3 style="margin:0 0 10px 0;font-size:16px;border-bottom:1px solid var(--border);padding-bottom:5px;">Episode ${ep.episodeNumber || ''} ${ep.episodeTitle ? '- ' + ep.episodeTitle : ''}</h3></div>`;
                     
                     ['480p', '720p', '1080p'].forEach(q => {
-                        const l = ep[`quality${q.charAt(0).toUpperCase() + q.slice(1)}`] || ep[`quality${q}`];
+                        const l = ep['quality' + q] || ep[`quality_${q}`];
                         if (l) {
                             html += `
                                 <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px;background:rgba(255,255,255,0.03);padding:10px 15px;border-radius:8px;">

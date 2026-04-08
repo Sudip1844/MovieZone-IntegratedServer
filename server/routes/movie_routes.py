@@ -252,8 +252,8 @@ def approve_movie(movie_id):
                         thumbnail = movie.get('thumbnail_file_id') or movie.get('thumbnail_url')
                         
                         base_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
-                        if thumbnail and thumbnail.startswith('http'):
-                            # Have URL, use sendPhoto
+                        if thumbnail:
+                            # Use sendPhoto (works with both file_id and HTTP URL)
                             payload = {
                                 "chat_id": f"@{CHANNEL_USERNAME}",
                                 "photo": thumbnail,

@@ -116,7 +116,12 @@ function showFieldErrors() {
     if (!title) document.getElementById('fg-title')?.classList.add('has-error');
     if (!cats) document.getElementById('fg-categories')?.classList.add('has-error');
     if (!langs) document.getElementById('fg-languages')?.classList.add('has-error');
-    if (!hasLink && type === 'single') document.getElementById('fg-singleLink')?.classList.add('has-error');
+    if (!hasLink) {
+        if (type === 'single') document.getElementById('fg-singleLink')?.classList.add('has-error');
+        else if (type === 'quality') document.getElementById('fields-quality')?.classList.add('has-error');
+        else if (type === 'zip') document.getElementById('fields-zip')?.classList.add('has-error');
+        else if (type === 'episode') document.getElementById('fields-episode')?.classList.add('has-error');
+    }
 }
 function validateForm() {
     const thumb = document.getElementById('movieThumbnail').files.length > 0;
@@ -297,7 +302,7 @@ async function addMovie() {
         if (!body.quality480p && !body.quality720p && !body.quality1080p) return showToast('Enter at least one zip link', 'error');
     }
 
-    // removed redeclaration of thumbnailFile here
+
     const overlay = document.createElement('div');
     overlay.id = 'uploadOverlay';
     overlay.innerHTML = '<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-size:24px;"><div>Uploading Movie & Generating Links...</div><div class="loader" style="margin-top:20px;border-width:4px;width:40px;height:40px;border-color:#fff transparent transparent transparent;border-style:solid;border-radius:50%;animation:spin 1s linear infinite;"></div><style>@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}</style></div>';
