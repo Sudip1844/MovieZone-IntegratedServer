@@ -225,26 +225,30 @@ async def add_channel_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     user_role = db.get_user_role(update.effective_user.id)
     keyboard = await set_conversation_keyboard(update, context, user_role)
     
-    # Set conversation commands for both message and callback query
     await set_conversation_commands(update, context)
     
-    # Simple message without storing for editing
+    prompt = (
+        "📺 <b>Channel ID দিন:</b>\n\n"
+        "দুটো ফরম্যাটে দেওয়া যাবে:\n"
+        "• <code>@channelname</code>\n"
+        "• <code>-1001234567890</code> (numeric ID)\n\n"
+        "⚠️ Invite link চলবে না। Channel-এ বটকে Admin করুন।"
+    )
+    
     if update.callback_query:
         query = update.callback_query
         await query.answer()
-        await query.edit_message_text("📺 Send channel link (e.g., https://t.me/moviezone969):")
+        await query.edit_message_text(prompt, parse_mode='HTML')
     else:
-        await update.message.reply_text("📺 Send channel link (e.g., https://t.me/moviezone969):", reply_markup=keyboard)
+        await update.message.reply_text(prompt, parse_mode='HTML', reply_markup=keyboard)
     return GET_CHANNEL_LINK
 
 async def get_channel_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Gets the channel link."""
-    channel_link = update.message.text
+    """Gets the channel ID (username or numeric)."""
+    channel_input = update.message.text.strip()
     
-    # Check if user sent cancel command or pressed cancel button
-    if (channel_link.lower() == '/cancel' or 
-        channel_link.lower() == 'cancel' or
-        channel_link == '❌ Cancel'):
+    # Check for cancel
+    if channel_input.lower() in ['/cancel', 'cancel', '❌ cancel']:
         from bot.utils import restore_main_keyboard
         user_role = db.get_user_role(update.effective_user.id)
         keyboard = await restore_main_keyboard(update, context, user_role)
@@ -252,21 +256,38 @@ async def get_channel_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         context.user_data.clear()
         return ConversationHandler.END
     
-    # Edit original message with link confirmation and ask for short name
-    channel_message = context.user_data.get('channel_message')
-    
-    # Extract channel username from link
-    if "t.me/" in channel_link:
-        channel_username = channel_link.split("t.me/")[-1].replace("@", "")
-        
-        context.user_data['new_channel'] = {'link': channel_link, 'username': channel_username}
-        
-        # Simple message without editing
-        await update.message.reply_text(f"✅ Channel: {channel_link}\n\nEnter short name (e.g., 'Main'):")
-        return GET_CHANNEL_SHORT_NAME
-    else:
-        await update.message.reply_text("❌ Invalid link format. Send channel link:")
+    # Reject invite links that contain '+'
+    if '+' in channel_input and not channel_input.lstrip('@').lstrip('-').isdigit():
+        await update.message.reply_text(
+            "❌ এটা একটা invite link — এটা কাজ করবে না।\n\n"
+            "সঠিক ফরম্যাট দিন:\n"
+            "• <code>@channelname</code>\n"
+            "• <code>-1001234567890</code> (numeric ID)",
+            parse_mode='HTML'
+        )
         return GET_CHANNEL_LINK
+    
+    # Accept @username format
+    if channel_input.startswith('@'):
+        channel_id = channel_input  # e.g. @moviezone969
+        channel_username = channel_input.lstrip('@')
+    # Accept numeric ID (channel IDs are negative like -1001234567890)
+    elif channel_input.lstrip('-').isdigit():
+        channel_id = channel_input  # e.g. -1001234567890
+        channel_username = channel_input
+    else:
+        await update.message.reply_text(
+            "❌ Invalid format.\n\n"
+            "সঠিক ফরম্যাট দিন:\n"
+            "• <code>@channelname</code>\n"
+            "• <code>-1001234567890</code> (numeric ID)",
+            parse_mode='HTML'
+        )
+        return GET_CHANNEL_LINK
+    
+    context.user_data['new_channel'] = {'channel_id': channel_id, 'username': channel_username}
+    await update.message.reply_text(f"✅ Channel ID: <code>{channel_id}</code>\n\nএখন একটা short name দিন (যেমন: 'Main'):", parse_mode='HTML')
+    return GET_CHANNEL_SHORT_NAME
 
 async def get_channel_short_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Gets the short name for the channel."""
@@ -283,12 +304,11 @@ async def get_channel_short_name(update: Update, context: ContextTypes.DEFAULT_T
         context.user_data.clear()
         return ConversationHandler.END
     
-    # Add channel directly and show final result in original message
     channel_info = context.user_data['new_channel']
     channel_info['short_name'] = short_name
     
-    # Bypass bot channel access check as requested by User
-    channel_id = f"@{channel_info['username']}"
+    # Use the directly provided channel_id (no conversion needed)
+    channel_id = channel_info['channel_id']
     channel_name = channel_info['username']
     
     # Add channel to database  

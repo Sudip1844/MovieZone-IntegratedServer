@@ -158,27 +158,31 @@ def generate_download_buttons(movie_id: int, files: dict) -> InlineKeyboardMarku
     
     return InlineKeyboardMarkup(buttons)
 
-def format_movie_post(movie_details: dict, channel_username: str) -> str:
+def format_movie_post(movie_details: dict, channel_username: str, base_url: str = None) -> str:
     """
     ডেটাবেস থেকে প্রাপ্ত মুভির তথ্য দিয়ে একটি সুন্দর পোস্ট ফরম্যাট করে।
     স্কিপ করা ফিল্ডগুলো (N/A) প্রিভিউতে দেখানো হয় না।
+    Download link goes through /m/<short_id> for ad page, not direct URL.
     """
+    from bot.config import WEBSITE_BASE_URL
+    if not base_url:
+        base_url = WEBSITE_BASE_URL
+
     files = movie_details.get('files', {})
+    short_id = movie_details.get('short_id', '')
     is_series = any('E' in quality for quality in files.keys())
     
-    # ডাউনলোড লিঙ্ক তৈরি
+    # ডাউনলোড লিঙ্ক তৈরি — via /m/<short_id> to go through Ad Page
     download_links = ""
     episode_info = ""
     if is_series:
         # Get all episode numbers to find the range
         episode_files = [quality for quality in files.keys() if quality.startswith('E')]
         if episode_files:
-            # Extract episode numbers and find the range
             episode_numbers = []
             for ep_file in episode_files:
                 try:
-                    # Extract number from formats like "E1", "E01", "E001", etc.
-                    ep_num = int(ep_file[1:])  # Remove 'E' and convert to int
+                    ep_num = int(ep_file[1:])
                     episode_numbers.append(ep_num)
                 except ValueError:
                     continue
@@ -188,25 +192,37 @@ def format_movie_post(movie_details: dict, channel_username: str) -> str:
                 first_ep = min(episode_numbers)
                 last_ep = max(episode_numbers)
                 
-                # Format episode range display
                 if first_ep == last_ep:
                     episode_info = f"Available Episodes: Ep{first_ep}"
                 else:
                     episode_info = f"Available Episodes: Ep{first_ep} to Ep{last_ep}"
                 
-                # Create download link for first episode
-                first_episode = next((quality for quality in files.keys() if quality.startswith('E')), None)
-                if first_episode:
-                    # Use actual download URL instead of bot redirect
-                    actual_download_url = files[first_episode]
-                    download_links = f"👉 <a href='{actual_download_url}'>Click To Download</a> 📥"
+                # Use redirect link through ad page
+                if short_id:
+                    redirect_url = f"{base_url}/m/{short_id}"
+                    download_links = f"👉 <a href='{redirect_url}'>Click To Download</a> 📥"
+                else:
+                    # Fallback to first episode direct link
+                    first_episode = next((q for q in files.keys() if q.startswith('E')), None)
+                    if first_episode:
+                        download_links = f"👉 <a href='{files[first_episode]}'>Click To Download</a> 📥"
     else:
-        # সিঙ্গেল মুভির জন্য প্রতিটি কোয়ালিটির লিঙ্ক
+        # Single/Quality movie — use redirect link through ad page
         qualities = sorted([quality for quality in files.keys() if not quality.startswith('E')])
-        for quality in qualities:
-            # Use actual download URL instead of bot redirect
-            actual_download_url = files[quality]
-            download_links += f"{quality} || 👉 <a href='{actual_download_url}'>Click To Download</a> 📥\n"
+        if short_id:
+            if len(qualities) == 1:
+                # Single link
+                redirect_url = f"{base_url}/m/{short_id}"
+                download_links = f"Download || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+            else:
+                # Multiple qualities — each quality gets its own redirect
+                for quality in qualities:
+                    redirect_url = f"{base_url}/m/{short_id}?q={quality}"
+                    download_links += f"{quality} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+        else:
+            # Fallback to direct URLs if no short_id
+            for quality in qualities:
+                download_links += f"{quality} || 👉 <a href='{files[quality]}'>Click To Download</a> 📥\n"
 
     # Build dynamic template - only include non-N/A fields
     title = movie_details.get('title', 'Unknown')

@@ -85,27 +85,25 @@ async def review_pending_movies(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.reply_text(f"📋 Approved movies for final review: {len(pending)}\n(Showing 5 at a time)\n\n✅ = Post to all channels\n❌ = Send back to Pending")
 
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    for movie in pending[:5]:  # Show max 5 at a time
-        title = movie.get('title', 'Unknown')
-        mid = movie.get('movie_id')
-        cats = ', '.join(movie.get('categories', []))
-        langs = ', '.join(movie.get('languages', []))
-        added_by = movie.get('added_by', 'owner')
-        release_year = movie.get('release_year', 'N/A')
-        imdb_rating = movie.get('imdb_rating', 'N/A')
-        runtime = movie.get('runtime', 'N/A')
+    from bot.utils import format_movie_post
+    from bot.config import CHANNEL_USERNAME
 
-        text = (f"🎬 Title: {title}\n"
-                f"👤 Added By: {added_by}\n"
-                f"📁 Type: {movie.get('download_type', 'single')}\n"
-                f"🏷️ Categories: {cats or 'N/A'}\n"
-                f"🌐 Languages: {langs or 'N/A'}\n")
-        if release_year != 'N/A':
-            text += f"📅 Year: {release_year}\n"
-        if imdb_rating != 'N/A':
-            text += f"⭐ IMDb: {imdb_rating}\n"
-        if runtime != 'N/A':
-            text += f"⏱️ Runtime: {runtime}\n"
+    for movie in pending[:5]:  # Show max 5 at a time
+        mid = movie.get('movie_id')
+
+        # Use format_movie_post for proper channel-style preview
+        try:
+            post_text = format_movie_post(movie, CHANNEL_USERNAME or "yourchannel")
+        except Exception as e:
+            logger.error(f"format_movie_post failed: {e}")
+            # Fallback to simple text
+            cats = ', '.join(movie.get('categories', []))
+            langs = ', '.join(movie.get('languages', []))
+            post_text = (f"🎬 <b>{movie.get('title', 'Unknown')}</b>\n"
+                        f"👤 Added By: {movie.get('added_by', 'owner')}\n"
+                        f"📁 Type: {movie.get('download_type', 'single')}\n"
+                        f"🏷️ Categories: {cats or 'N/A'}\n"
+                        f"🌐 Languages: {langs or 'N/A'}")
 
         buttons = InlineKeyboardMarkup([
             [
@@ -117,11 +115,17 @@ async def review_pending_movies(update: Update, context: ContextTypes.DEFAULT_TY
         thumbnail = movie.get('thumbnail_file_id')
         if thumbnail:
             try:
-                await update.message.reply_photo(photo=thumbnail, caption=text, reply_markup=buttons)
+                await update.message.reply_photo(
+                    photo=thumbnail,
+                    caption=post_text,
+                    reply_markup=buttons,
+                    parse_mode='HTML'
+                )
                 continue
-            except Exception:
-                pass
-        await update.message.reply_text(text, reply_markup=buttons)
+            except Exception as e:
+                logger.error(f"Failed to send photo: {e}")
+        # Fallback: send as text
+        await update.message.reply_text(post_text, reply_markup=buttons, parse_mode='HTML')
 
 
 async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -138,61 +142,95 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
     action = parts[1]  # approve or reject
     movie_id = int(parts[2])
 
+    # Helper to edit message regardless of whether it's a photo or text
+    async def edit_reply(text: str):
+        try:
+            # Photo messages need edit_message_caption
+            if query.message.photo:
+                await query.edit_message_caption(caption=text)
+            else:
+                await query.edit_message_text(text)
+        except Exception as e:
+            logger.error(f"Failed to edit message: {e}")
+            # Try sending a new message as fallback
+            try:
+                await query.message.reply_text(text)
+            except Exception:
+                pass
+
     if action == 'approve':
         # Mark as 'posted' so it doesn't show up in review again
         success = db.approve_movie(movie_id)
         if success:
             movie = db.get_movie_details(movie_id)
             title = movie.get('title', 'Unknown') if movie else 'Unknown'
-            await query.edit_message_text(f"✅ APPROVED & POSTING: {title}\n\nPosting to all channels...")
+            await edit_reply(f"✅ APPROVED: {title}\n\nPosting to all channels...")
 
             # Auto-post to all configured channels
             if movie:
                 try:
                     from bot.utils import format_movie_post
-                    # The username pass is deprecated but we'll leave it as a string
-                    post_text = format_movie_post(movie, "moviezone969") 
+                    from bot.config import CHANNEL_USERNAME, DUMP_CHAT_ID
+                    post_text = format_movie_post(movie, CHANNEL_USERNAME or "yourchannel")
                     thumbnail = movie.get('thumbnail_file_id')
-                    
+
                     channels = db.get_all_channels()
-                    from bot.config import DUMP_CHAT_ID
+                    posted_count = 0
+                    failed_channels = []
                     if channels:
                         for channel in channels:
-                            channel_username = channel.get('channel_id') # We use channel_id for pushing
-                            if not channel_username:
+                            channel_id = channel.get('channel_id')
+                            if not channel_id:
                                 continue
-                            if str(channel_username) == str(DUMP_CHAT_ID):
-                                continue # Do not post entire movie to Dump Channel upon approval
+                            if str(channel_id) == str(DUMP_CHAT_ID):
+                                continue
+                            # Detect invite links — bot cannot post to invite links
+                            # Invite links look like: @+abc123, https://t.me/+abc123, +abc123
+                            ch_str = str(channel_id).strip()
+                            if '+' in ch_str and not ch_str.lstrip('-').isdigit():
+                                logger.error(f"⚠️ Channel '{ch_str}' is an INVITE LINK, not a channel ID! Use @username or numeric ID like -1001234567890")
+                                failed_channels.append(f"{ch_str} (invite link — use @username or numeric ID)")
+                                continue
                             try:
                                 if thumbnail:
                                     await context.bot.send_photo(
-                                        chat_id=channel_username,
+                                        chat_id=channel_id,
                                         photo=thumbnail,
                                         caption=post_text,
                                         parse_mode='HTML'
                                     )
                                 else:
                                     await context.bot.send_message(
-                                        chat_id=channel_username,
+                                        chat_id=channel_id,
                                         text=post_text,
                                         parse_mode='HTML'
                                     )
-                                db.mark_movie_as_posted(movie_id)
-                                logger.info(f"Movie posted to channel: {title} on {channel_username}")
+                                posted_count += 1
+                                logger.info(f"Movie posted to channel: {title} on {channel_id}")
                             except Exception as e:
-                                logger.error(f"Failed to post to channel {channel_username}: {e}")
+                                logger.error(f"Failed to post to channel {channel_id}: {e}")
+                                failed_channels.append(f"{channel_id} ({str(e)[:50]})")
+                    db.mark_movie_as_posted(movie_id)
+                    # Update the message with final status
+                    try:
+                        if query.message.photo:
+                            await query.edit_message_caption(caption=f"✅ POSTED: {title}\n\nPosted to {posted_count} channel(s)!")
+                        else:
+                            await query.edit_message_text(f"✅ POSTED: {title}\n\nPosted to {posted_count} channel(s)!")
+                    except Exception:
+                        pass
                 except Exception as e:
                     logger.error(f"Failed to post to channels: {e}")
         else:
-            await query.edit_message_text("Failed to approve movie.")
+            await edit_reply("Failed to approve movie.")
 
     elif action == 'reject':
         # Send back to pending so owner panel can re-review
         success = db.reject_movie(movie_id, 'pending')
         if success:
-            await query.edit_message_text("🔄 Movie sent back to Pending queue for re-review.")
+            await edit_reply("🔄 Movie sent back to Pending queue for re-review.")
         else:
-            await query.edit_message_text("Failed to reject movie.")
+            await edit_reply("Failed to reject movie.")
 
 
 async def edit_movie_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
