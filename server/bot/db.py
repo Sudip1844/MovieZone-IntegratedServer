@@ -212,11 +212,20 @@ def _format_movie_for_bot(movie: Dict) -> Dict:
             files['720p'] = movie['quality_720p']
         if movie.get('quality_1080p'):
             files['1080p'] = movie['quality_1080p']
+    elif dtype == 'zip':
+        # ZIP: quality links + episode range stored separately
+        if movie.get('quality_480p'):
+            files['480p'] = movie['quality_480p']
+        if movie.get('quality_720p'):
+            files['720p'] = movie['quality_720p']
+        if movie.get('quality_1080p'):
+            files['1080p'] = movie['quality_1080p']
     elif dtype == 'episode' and movie.get('episodes'):
         eps = movie['episodes']
         if isinstance(eps, str):
             eps = json.loads(eps)
-        files = eps
+        # Keep episodes as list — format_movie_post handles it
+        files = {'__episodes__': eps}
 
     categories = movie.get('categories', [])
     if isinstance(categories, str):
@@ -246,11 +255,14 @@ def _format_movie_for_bot(movie: Dict) -> Dict:
         'downloads': movie.get('downloads', 0),
         'views': movie.get('views', 0),
         'short_id': movie.get('short_id', ''),
+        'from_episode': movie.get('from_episode'),   # ZIP episode range start
+        'to_episode': movie.get('to_episode'),        # ZIP episode range end
         'status': movie.get('status', 'approved'),
         'is_active': movie.get('is_active', True),
         'added_by': movie.get('added_by', ''),
         'created_at': movie.get('created_at', ''),
     }
+
 
 
 def search_movies(query: str, limit: int = 10) -> List[Dict]:

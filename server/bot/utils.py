@@ -161,117 +161,137 @@ def generate_download_buttons(movie_id: int, files: dict) -> InlineKeyboardMarku
 def format_movie_post(movie_details: dict, channel_username: str, base_url: str = None) -> str:
     """
     ডেটাবেস থেকে প্রাপ্ত মুভির তথ্য দিয়ে একটি সুন্দর পোস্ট ফরম্যাট করে।
-    স্কিপ করা ফিল্ডগুলো (N/A) প্রিভিউতে দেখানো হয় না।
     Download link goes through /m/<short_id> for ad page, not direct URL.
+
+    Supported download_type:
+      - single  : একটা ডাউনলোড লিংক
+      - quality : 480p / 720p / 1080p আলাদা আলাদা লিংক
+      - zip     : episode range (E1-E6) + quality links
+      - episode : প্রতিটা episode × প্রতিটা quality আলাদা লিংক
     """
     from bot.config import WEBSITE_BASE_URL
     if not base_url:
         base_url = WEBSITE_BASE_URL
 
-    files = movie_details.get('files', {})
-    short_id = movie_details.get('short_id', '')
-    is_series = any('E' in quality for quality in files.keys())
-    
-    # ডাউনলোড লিঙ্ক তৈরি — via /m/<short_id> to go through Ad Page
-    download_links = ""
-    episode_info = ""
-    if is_series:
-        # Get all episode numbers to find the range
-        episode_files = [quality for quality in files.keys() if quality.startswith('E')]
-        if episode_files:
-            episode_numbers = []
-            for ep_file in episode_files:
-                try:
-                    ep_num = int(ep_file[1:])
-                    episode_numbers.append(ep_num)
-                except ValueError:
-                    continue
-            
-            if episode_numbers:
-                episode_numbers.sort()
-                first_ep = min(episode_numbers)
-                last_ep = max(episode_numbers)
-                
-                if first_ep == last_ep:
-                    episode_info = f"Available Episodes: Ep{first_ep}"
-                else:
-                    episode_info = f"Available Episodes: Ep{first_ep} to Ep{last_ep}"
-                
-                # Use redirect link through ad page
-                if short_id:
-                    redirect_url = f"{base_url}/m/{short_id}"
-                    download_links = f"👉 <a href='{redirect_url}'>Click To Download</a> 📥"
-                else:
-                    # Fallback to first episode direct link
-                    first_episode = next((q for q in files.keys() if q.startswith('E')), None)
-                    if first_episode:
-                        download_links = f"👉 <a href='{files[first_episode]}'>Click To Download</a> 📥"
-    else:
-        # Single/Quality movie — use redirect link through ad page
-        qualities = sorted([quality for quality in files.keys() if not quality.startswith('E')])
-        if short_id:
-            if len(qualities) == 1:
-                # Single link
-                redirect_url = f"{base_url}/m/{short_id}"
-                download_links = f"Download || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
-            else:
-                # Multiple qualities — each quality gets its own redirect
-                for quality in qualities:
-                    redirect_url = f"{base_url}/m/{short_id}?q={quality}"
-                    download_links += f"{quality} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
-        else:
-            # Fallback to direct URLs if no short_id
-            for quality in qualities:
-                download_links += f"{quality} || 👉 <a href='{files[quality]}'>Click To Download</a> 📥\n"
+    dtype        = movie_details.get('download_type', 'single')
+    files        = movie_details.get('files', {})
+    short_id     = movie_details.get('short_id', '')
+    from_ep      = movie_details.get('from_episode')
+    to_ep        = movie_details.get('to_episode')
 
-    # Build dynamic template - only include non-N/A fields
-    title = movie_details.get('title', 'Unknown')
-    languages = " | ".join(movie_details.get('languages', []))
-    
-    # Remove emojis from categories for cleaner display
-    categories_raw = movie_details.get('categories', [])
-    categories_clean = []
-    for category in categories_raw:
-        # Remove emoji by taking only the text part before space
-        if ' ' in category:
-            clean_category = category.split(' ')[0]
+    download_links = ""
+    episode_info   = ""
+    dl_header      = "🔗 Download Link Below"
+
+    # ── SINGLE ────────────────────────────────────────────────────────────
+    if dtype == 'single':
+        redirect_url = f"{base_url}/m/{short_id}" if short_id else files.get('Download', '#')
+        download_links = f"Download || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+
+    # ── QUALITY ───────────────────────────────────────────────────────────
+    elif dtype == 'quality':
+        qualities = sorted([q for q in files if q not in ('__episodes__',)])
+        for q in qualities:
+            redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
+            download_links += f"{q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+
+    # ── ZIP ───────────────────────────────────────────────────────────────
+    elif dtype == 'zip':
+        dl_header = "🔗 ZIP Download Link Below"
+        # Episode range label  (e.g.  E1-E6)
+        if from_ep and to_ep:
+            ep_range = f"E{from_ep}-E{to_ep}"
+        elif from_ep:
+            ep_range = f"E{from_ep}"
         else:
-            clean_category = category
-        categories_clean.append(clean_category)
+            ep_range = "All Episodes"
+
+        qualities = sorted([q for q in files if q not in ('__episodes__',)])
+        for q in qualities:
+            redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
+            download_links += f"{ep_range} || {q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+
+    # ── EPISODE ───────────────────────────────────────────────────────────
+    elif dtype == 'episode':
+        episodes = files.get('__episodes__', [])
+        if isinstance(episodes, list) and episodes:
+            # Sort episodes by episode number
+            def ep_sort_key(ep):
+                try:
+                    return int(ep.get('episodeNumber', 0))
+                except:
+                    return 0
+            episodes = sorted(episodes, key=ep_sort_key)
+
+            ep_nums = [ep.get('episodeNumber') for ep in episodes if ep.get('episodeNumber')]
+            if ep_nums:
+                if len(ep_nums) == 1:
+                    episode_info = f"Available Episodes: Ep{ep_nums[0]}"
+                else:
+                    episode_info = f"Available Episodes: Ep{ep_nums[0]} to Ep{ep_nums[-1]}"
+
+            quality_order = ['480p', '720p', '1080p']
+            for ep in episodes:
+                ep_num = ep.get('episodeNumber', '?')
+                ep_label = f"E{ep_num}"
+                ep_links = ""
+
+                for q in quality_order:
+                    # DB keys can be quality480p or quality_480p
+                    raw_url = (ep.get(f'quality{q}') or
+                               ep.get(f'quality_{q}') or
+                               ep.get(q, ''))
+                    if raw_url:
+                        # Each episode+quality gets its own redirect
+                        if short_id:
+                            redirect_url = f"{base_url}/m/{short_id}?ep={ep_num}&q={q}"
+                        else:
+                            redirect_url = raw_url
+                        ep_links += f"{ep_label} || {q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+
+                if ep_links:
+                    download_links += ep_links + "\n"
+
+    # ── BUILD POST ────────────────────────────────────────────────────────
+    title      = movie_details.get('title', 'Unknown')
+    languages  = " | ".join(movie_details.get('languages', []))
+
+    categories_raw   = movie_details.get('categories', [])
+    categories_clean = []
+    for cat in categories_raw:
+        clean = cat.split(' ')[0] if ' ' in cat else cat
+        categories_clean.append(clean)
     categories = " | ".join(categories_clean)
-    
-    # Start building the post with "Title:" prefix
+
     post_text = f"🍿 Title: {title}\n\n"
-    
-    # Only add fields that are not N/A or empty
+
     if languages:
         post_text += f"📌 Language: {languages}\n"
     if categories:
         post_text += f"☘️ Genre: {categories}\n"
-    
+
     release_year = movie_details.get('release_year', 'N/A')
     if release_year != 'N/A':
         post_text += f"🗓️ Release Year: {release_year}\n"
-    
+
     runtime = movie_details.get('runtime', 'N/A')
     if runtime != 'N/A':
         post_text += f"⏰ Runtime: {runtime}\n"
-    
+
     imdb_rating = movie_details.get('imdb_rating', 'N/A')
     if imdb_rating != 'N/A':
         post_text += f"⭐️ IMDb Rating: {imdb_rating}/10\n"
-    
-    # Add series-specific episode info
-    if is_series and episode_info:
+
+    if episode_info:
         post_text += f"\n{episode_info}\n"
-    
-    # Add download links and footer
-    post_text += f"\n🔗 Download Link Below\n{download_links.strip()}\n\n"
+
+    post_text += f"\n{dl_header}\n{download_links.strip()}\n\n"
     post_text += "🔥 Ultra Fast • Direct Access\n"
     post_text += f"🛰️ Join Now: @{channel_username}\n"
     post_text += "🔔 New Movies Uploaded Daily!"
-    
+
     return post_text
+
 
 def get_movie_search_results_markup(movies: List[dict]) -> InlineKeyboardMarkup:
     """Create inline keyboard for movie search results."""
