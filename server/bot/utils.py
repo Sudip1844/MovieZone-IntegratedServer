@@ -323,38 +323,12 @@ def create_category_keyboard(categories: List[str]) -> InlineKeyboardMarkup:
 
 # --- Dynamic Bot Commands Management ---
 async def set_conversation_commands(update: Update, context):
-    """Remove hamburger menu entirely - no commands will appear there."""
-    from telegram import BotCommand, BotCommandScopeChat
-    
-    try:
-        # Get chat_id from either update.effective_chat or callback query
-        if hasattr(update, 'callback_query') and update.callback_query:
-            chat_id = update.callback_query.message.chat_id
-        else:
-            chat_id = update.effective_chat.id
-            
-        # REMOVE ALL COMMANDS from hamburger menu permanently
-        await context.bot.set_my_commands(
-            commands=[],  # Empty array = no hamburger menu
-            scope=BotCommandScopeChat(chat_id=chat_id)
-        )
-        logger.info(f"Hamburger menu disabled for chat {chat_id}")
-    except Exception as e:
-        logger.error(f"Failed to disable hamburger menu: {e}")
+    """No-op: hamburger menu is disabled globally at startup, not per-message."""
+    pass  # Removed per-message API call — was causing spam & unnecessary load
 
 async def restore_default_commands(context, chat_id):
-    """Keep hamburger menu disabled - all commands through reply keyboard only."""
-    from telegram import BotCommand, BotCommandScopeChat
-    
-    try:
-        # Keep hamburger menu empty - all commands through reply keyboard
-        await context.bot.set_my_commands(
-            commands=[],  # No hamburger menu commands
-            scope=BotCommandScopeChat(chat_id=chat_id)
-        )
-        logger.info(f"Hamburger menu kept disabled for chat {chat_id}")
-    except Exception as e:
-        logger.error(f"Failed to keep hamburger menu disabled: {e}")
+    """No-op: hamburger menu stays disabled globally."""
+    pass  # Removed per-message API call — was causing spam & unnecessary load
 
 async def set_conversation_keyboard(update: Update, context, user_role: str):
     """Use main keyboard during conversations since cancel is already included."""
@@ -362,8 +336,7 @@ async def set_conversation_keyboard(update: Update, context, user_role: str):
     # Store the original keyboard to restore later
     context.user_data['original_keyboard'] = get_main_keyboard(user_role)
     
-    # Set conversation commands (hamburger menu disabled)
-    await set_conversation_commands(update, context)
+    # Hamburger menu is handled globally at startup — no per-message call needed
     
     return keyboard
 
