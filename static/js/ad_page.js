@@ -3,6 +3,12 @@ let timerFinished = false;
         let fetchError = null;
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Force scroll to top on reload
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            window.scrollTo(0, 0);
+
             const urlParams = new URLSearchParams(window.location.search);
             const shortId = urlParams.get('v');
             
@@ -97,8 +103,8 @@ let timerFinished = false;
 
             // Generate header
             let html = `
-                <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:25px;margin:40px auto;max-width:600px;text-align:center;">
-                    <h2 style="margin:0 0 20px 0;font-size:22px;color:var(--text);">${linkData.title}</h2>
+                <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); backdrop-filter: blur(16px); padding:25px; margin:40px auto; max-width:600px; text-align:center;">
+                    <h2 style="margin:0 0 20px 0;font-size:22px;color:#ffd700;">${linkData.title}</h2>
                     <div style="display:flex;flex-direction:column;gap:15px;align-items:center;">
             `;
 
@@ -126,7 +132,7 @@ let timerFinished = false;
                 try { eps = typeof linkData.episodes === 'string' ? JSON.parse(linkData.episodes) : linkData.episodes; } catch(e){}
                 
                 (eps || []).forEach(ep => {
-                    html += `<div style="width:100%;text-align:left;margin-top:10px;"><h3 style="margin:0 0 10px 0;font-size:16px;border-bottom:1px solid var(--border);padding-bottom:5px;">Episode ${ep.episodeNumber || ''} ${ep.episodeTitle ? '- ' + ep.episodeTitle : ''}</h3></div>`;
+                    html += `<div style="width:100%;text-align:left;margin-top:10px;"><h3 style="margin:0 0 10px 0;font-size:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:5px;color:#06b6d4;">Episode ${ep.episodeNumber || ''} ${ep.episodeTitle ? '- ' + ep.episodeTitle : ''}</h3></div>`;
                     
                     ['480p', '720p', '1080p'].forEach(q => {
                         const l = ep['quality' + q] || ep[`quality_${q}`];
