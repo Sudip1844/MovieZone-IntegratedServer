@@ -113,15 +113,18 @@ Ready to manage your movie empire!"""
     elif user_role == 'admin':
         welcome_message = f"""🛡️ Welcome Back, Admin {user.mention_html()}!
 
-🎬 MovieZone Bot Admin Panel
+🎬 MovieZone Telegram Admin Panel
 
-Your Capabilities:
-• 🎭 Add Movies - Upload new content to database
-• 📊 View Requests - Handle user movie requests  
-• 🗑️ Remove Movies - Delete outdated content
-• 📈 Statistics - Monitor bot performance
+Your Telegram Capabilities:
+• 📊 View Requests - Handle user movie requests
 
-You can manage the movie library and assist users.
+🌐 Website Admin Capabilities:
+• 🎭 Add Movies - Upload new content
+• 🗑️ Remove Movies - Delete content
+• 📈 Statistics - Monitor performance
+
+(Please log in to the Website Admin Panel to add/remove movies and check stats.)
+
 Ready to serve the community!"""
         
     else:
@@ -137,11 +140,11 @@ What We Offer:
 📥 Direct Downloads - Fast & secure downloads
 
 Movie Collection:
-• 🎭 Bollywood & Bengali Movies
-• 🧑‍🎤 Latest Hollywood Blockbusters
-• 🎪 South Indian Dubbed Movies  
-• 📺 Popular Web Series
-• 🎨 Animation & Kids Content
+• 🎭 Bollywood & Hollywood Movies
+• 🧑‍🎤 Latest Blockbusters Movies in any language
+• 🎪 South Indian,Korean,Chinese Dubbed Movies  
+• 📺 Popular Web Series,K-Drama
+• 🎨 Anime,Hentai & Kids Content etc...
 
 Download Process:
 1. 🔍 Search or browse for your movie
