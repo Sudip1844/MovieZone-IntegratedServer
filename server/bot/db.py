@@ -508,23 +508,23 @@ def generate_weekly_report() -> str:
         return f"Error generating weekly report: {str(e)}"
 
 def get_pending_movies() -> List[Dict]:
-    """Get all movies with status 'pending'."""
+    """Get all movies with status 'approved' (approved from website, waiting for bot review to post to channels)."""
     try:
-        rows = supabase.select('movies', '*', {'status': 'pending'}, order='created_at.asc')
+        rows = supabase.select('movies', '*', {'status': 'approved'}, order='created_at.asc')
         if rows is None:  
             return []
         return [_format_movie_for_bot(m) for m in rows]
     except Exception as e:
-        logger.error(f"Error fetching pending movies: {e}")
+        logger.error(f"Error fetching approved movies for review: {e}")
         return []
 
 def approve_movie(movie_id: int) -> bool:
-    """Approve a pending movie."""
+    """Approve from bot review - marks as 'posted' (will be posted to channels)."""
     try:
-        supabase.update('movies', {'status': 'approved'}, {'id': movie_id})
+        supabase.update('movies', {'status': 'posted'}, {'id': movie_id})
         return True
     except Exception as e:
-        logger.error(f"Error approving movie {movie_id}: {e}")
+        logger.error(f"Error posting movie {movie_id}: {e}")
         return False
 
 def reject_movie(movie_id: int, reject_reason: str = 'rejected_by_tg_bot') -> bool:

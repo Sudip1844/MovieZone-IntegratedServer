@@ -59,10 +59,13 @@ def get_download_link(short_id):
         movie = rows[0]
         dtype = movie.get('download_type', 'single')
         quality = request.args.get('quality', '')
+        ep_num = request.args.get('episode', '')
 
         if dtype == 'single':
             link = movie.get('original_link', '')
-        elif dtype == 'quality':
+            return jsonify({'link': link, 'title': movie.get('title', '')})
+
+        elif dtype == 'quality' or dtype == 'zip':
             if quality == '480p':
                 link = movie.get('quality_480p', '')
             elif quality == '720p':
@@ -70,11 +73,38 @@ def get_download_link(short_id):
             elif quality == '1080p':
                 link = movie.get('quality_1080p', '')
             else:
-                link = movie.get('quality_720p') or movie.get('quality_480p') or movie.get('quality_1080p', '')
+                # Return all available quality links
+                links = {}
+                if movie.get('quality_480p'): links['480p'] = movie['quality_480p']
+                if movie.get('quality_720p'): links['720p'] = movie['quality_720p']
+                if movie.get('quality_1080p'): links['1080p'] = movie['quality_1080p']
+                return jsonify({'links': links, 'title': movie.get('title', ''), 'type': dtype})
+            return jsonify({'link': link, 'title': movie.get('title', '')})
+
+        elif dtype == 'episode':
+            import json as json_mod
+            episodes = movie.get('episodes', [])
+            if isinstance(episodes, str):
+                try: episodes = json_mod.loads(episodes)
+                except: episodes = []
+            
+            if ep_num:
+                # Return specific episode
+                for ep in (episodes or []):
+                    if str(ep.get('episodeNumber', '')) == str(ep_num):
+                        links = {}
+                        for q in ['480p', '720p', '1080p']:
+                            l = ep.get(f'quality{q}') or ep.get(f'quality_{q}')
+                            if l: links[q] = l
+                        return jsonify({'links': links, 'episode': ep_num, 'title': movie.get('title', '')})
+                return jsonify({'error': 'Episode not found'}), 404
+            else:
+                # Return all episodes
+                return jsonify({'episodes': episodes, 'title': movie.get('title', ''), 'type': 'episode'})
+
         else:
             link = movie.get('original_link', '')
-
-        return jsonify({'link': link, 'title': movie.get('title', '')})
+            return jsonify({'link': link, 'title': movie.get('title', '')})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

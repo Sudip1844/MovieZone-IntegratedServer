@@ -219,63 +219,13 @@ def get_pending_movies():
 
 @movie_bp.route('/api/movies/<int:movie_id>/approve', methods=['POST'])
 def approve_movie(movie_id):
-    """Approve a movie and post to Telegram channel"""
+    """Approve a movie from Owner Panel - does NOT auto-post to channels.
+    Channel posting happens only via TG bot review (📋 Review Movies command).
+    Flow: Website approve → status:approved → Bot review → Bot approve → posts to channels
+    """
     try:
         supabase.update('movies', {'status': 'approved'}, {'id': movie_id})
-        
-        # Auto-post to Telegram channel
-        import requests
-        from bot.config import BOT_TOKEN, CHANNEL_USERNAME
-        from bot.utils import format_movie_post
-        
-        if CHANNEL_USERNAME and BOT_TOKEN:
-            def bg_post():
-                try:
-                    # Get newly approved movie
-                    rows = supabase.select('movies', '*', {'id': movie_id})
-                    if rows:
-                        movie = rows[0]
-                        # Simulate the 'files' dict expected by format_movie_post
-                        files = {}
-                        dtype = movie.get('download_type', 'single')
-                        if dtype == 'single' and movie.get('original_link'):
-                            files['Download'] = movie['original_link']
-                        elif dtype == 'quality':
-                            if movie.get('quality_480p'): files['480p'] = movie['quality_480p']
-                            if movie.get('quality_720p'): files['720p'] = movie['quality_720p']
-                            if movie.get('quality_1080p'): files['1080p'] = movie['quality_1080p']
-                        
-                        movie_for_post = movie.copy()
-                        movie_for_post['files'] = files
-                        
-                        post_text = format_movie_post(movie_for_post, CHANNEL_USERNAME)
-                        thumbnail = movie.get('thumbnail_file_id') or movie.get('thumbnail_url')
-                        
-                        base_url = f"https://api.telegram.org/bot{BOT_TOKEN}"
-                        if thumbnail:
-                            # Use sendPhoto (works with both file_id and HTTP URL)
-                            payload = {
-                                "chat_id": f"@{CHANNEL_USERNAME}",
-                                "photo": thumbnail,
-                                "caption": post_text,
-                                "parse_mode": "HTML"
-                            }
-                            requests.post(f"{base_url}/sendPhoto", json=payload, timeout=10)
-                        else:
-                            # Use sendMessage
-                            payload = {
-                                "chat_id": f"@{CHANNEL_USERNAME}",
-                                "text": post_text,
-                                "parse_mode": "HTML"
-                            }
-                            requests.post(f"{base_url}/sendMessage", json=payload, timeout=10)
-                except Exception as e:
-                    print(f"Failed to auto-post to Telegram: {e}")
-                    
-            import threading
-            threading.Thread(target=bg_post).start()
-                
-        return jsonify({'success': True, 'message': 'Movie approved and posted to channel'})
+        return jsonify({'success': True, 'message': 'Movie approved! Use bot Review Movies to post to channels.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

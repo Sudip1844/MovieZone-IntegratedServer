@@ -79,10 +79,10 @@ async def review_pending_movies(update: Update, context: ContextTypes.DEFAULT_TY
 
     pending = db.get_pending_movies()
     if not pending:
-        await update.message.reply_text("No pending movies to review!")
+        await update.message.reply_text("No approved movies waiting for review!")
         return
 
-    await update.message.reply_text(f"Pending movies for review: {len(pending)}\n(Showing 5 at a time)")
+    await update.message.reply_text(f"📋 Approved movies for final review: {len(pending)}\n(Showing 5 at a time)\n\n✅ = Post to all channels\n❌ = Send back to Pending")
 
     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
     for movie in pending[:5]:  # Show max 5 at a time
@@ -139,11 +139,12 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
     movie_id = int(parts[2])
 
     if action == 'approve':
+        # Mark as 'posted' so it doesn't show up in review again
         success = db.approve_movie(movie_id)
         if success:
             movie = db.get_movie_details(movie_id)
             title = movie.get('title', 'Unknown') if movie else 'Unknown'
-            await query.edit_message_text(f"APPROVED: {title}\n\nMovie is now live!")
+            await query.edit_message_text(f"✅ APPROVED & POSTING: {title}\n\nPosting to all channels...")
 
             # Auto-post to all configured channels
             if movie:
@@ -186,9 +187,10 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
             await query.edit_message_text("Failed to approve movie.")
 
     elif action == 'reject':
-        success = db.reject_movie(movie_id, 'rejected_by_tg_bot')
+        # Send back to pending so owner panel can re-review
+        success = db.reject_movie(movie_id, 'pending')
         if success:
-            await query.edit_message_text("Movie rejected.")
+            await query.edit_message_text("🔄 Movie sent back to Pending queue for re-review.")
         else:
             await query.edit_message_text("Failed to reject movie.")
 
