@@ -46,6 +46,11 @@ def create_app():
         """Ad page SPA"""
         return send_from_directory(app.static_folder, 'ad_page.html')
 
+    @app.route('/redirect.html')
+    def redirect_page():
+        """Clean redirect page SPA"""
+        return send_from_directory(app.static_folder, 'redirect.html')
+
     # --- Health Check ---
 
     @app.route('/api/health')

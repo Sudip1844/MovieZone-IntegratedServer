@@ -37,15 +37,7 @@ let timerFinished = false;
 
                 const isSingle = data.download_type === 'single';
 
-                // If ads are disabled, finish timer instantly
-                if (data.ads_enabled === false) {
-                    timerFinished = true;
-                    if (isSingle) {
-                        document.body.classList.remove('scroll-locked');
-                        window.location.href = data.original_link || data.target_link;
-                        return;
-                    }
-                }
+
 
                 // If timer already finished by the time data arrives, show download button now
                 if (timerFinished) {

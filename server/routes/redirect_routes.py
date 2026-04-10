@@ -22,7 +22,17 @@ def get_client_ip():
 
 @redirect_bp.route('/m/<short_id>')
 def movie_redirect(short_id):
-    """Redirect for backwards compatibility with Telegram bot links"""
+    """Redirect based on ad status for backwards compatibility with Telegram bot links"""
+    try:
+        from database.supabase_client import supabase
+        rows = supabase.select('movies', 'ads_enabled', {'short_id': short_id})
+        if rows:
+            movie = rows[0]
+            if not movie.get('ads_enabled', True):
+                return redirect(f"/redirect.html?v={short_id}")
+    except Exception as e:
+        pass
+        
     return redirect(f"/ad_page.html?v={short_id}")
 
 @redirect_bp.route('/api/link-info/<short_id>')

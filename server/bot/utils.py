@@ -193,6 +193,7 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
         qualities = sorted([q for q in files if q not in ('__episodes__',)])
         for q in qualities:
             redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
+            redirect_url = redirect_url.replace('&', '&amp;')
             download_links += f'{q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
     # ── ZIP ───────────────────────────────────────────────────────────────
@@ -209,6 +210,7 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
         qualities = sorted([q for q in files if q not in ('__episodes__',)])
         for q in qualities:
             redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
+            redirect_url = redirect_url.replace('&', '&amp;')
             download_links += f'{ep_range} || {q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
     # ── EPISODE ───────────────────────────────────────────────────────────
@@ -244,9 +246,11 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
                     if raw_url:
                         # Each episode+quality gets its own redirect
                         if short_id:
-                            redirect_url = f"{base_url}/m/{short_id}?ep={ep_num}&q={q}"
+                            redirect_url = f"{base_url}/m/{short_id}?ep={ep_num}&amp;q={q}"
                         else:
                             redirect_url = raw_url
+                        
+                        redirect_url = redirect_url.replace('&', '&amp;').replace('&amp;amp;', '&amp;')
                         ep_links += f'{ep_label} || {q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
                 if ep_links:

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieZone - Download Redirect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/ad_page.css">
+    <!-- Clean page: No Ad Scripts here! -->
+</head>
+<body style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh;">
+    
+    <div id="loading" style="text-align:center;">
+        <div class="spinner"></div>
+        <p>Preparing your links...</p>
+    </div>
+
+    <!-- Final download container only -->
+    <div id="downloadLinksContainer" class="download-container" style="width: 100%; padding: 20px;">
+        <!-- Dynamically populated by JS -->
+    </div>
+
+    <div class="footer" style="text-align: center; margin-top: auto; padding: 20px;">MovieZone • Powered by MovieBot</div>
+
+    <script src="/static/js/redirect_page.js"></script>
+</body>
+</html>
