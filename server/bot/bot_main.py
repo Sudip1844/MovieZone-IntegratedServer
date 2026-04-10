@@ -290,7 +290,7 @@ def build_application():
     # Import handlers from copied Tgbot code
     from bot.handlers.start_handler import start_handlers
     from bot.handlers.movie_handlers import (
-        request_movie_conv, remove_movie_conv,
+        request_movie_conv,
         search_movies, handle_search_query, browse_categories,
         show_requests
     )
@@ -311,9 +311,8 @@ def build_application():
     for handler in weekly_handlers:
         application.add_handler(handler)
 
-    # 2. Movie request/remove conversation handlers
+    # 2. Movie request conversation handlers
     application.add_handler(request_movie_conv)
-    application.add_handler(remove_movie_conv)
 
     # 3. Review & Edit commands (NEW - owner reviews pending movies from website)
     from telegram.ext import CallbackQueryHandler

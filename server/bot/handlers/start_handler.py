@@ -101,11 +101,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 🎬 MovieZone Bot Management Panel
 
 Available Powers:
-• 🎭 Movie Management - Add/Remove movies
 • 👥 Admin Control - Manage bot administrators  
 • 📢 Channel Management - Handle movie channels
 • 📊 Analytics - View detailed statistics
 • 🙏 User Requests - Review & process requests
+
+🌐 Website Admin Capabilities:
+• 🎭 Add Movies - Upload new content
+• 🗑️ Remove Movies - Delete content
 
 You have complete control over the bot ecosystem.
 Ready to manage your movie empire!"""
@@ -121,7 +124,7 @@ Your Telegram Capabilities:
 🌐 Website Admin Capabilities:
 • 🎭 Add Movies - Upload new content
 • 🗑️ Remove Movies - Delete content
-• 📈 Statistics - Monitor performance
+• 📈 Statistics - Monitor performance and Views
 
 (Please log in to the Website Admin Panel to add/remove movies and check stats.)
 
@@ -177,12 +180,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         help_text = """❓ Owner Help & Commands
 
 Available Features:
-• 📋 Review Movies - Review pending movies submitted from website
 • 📊 Show Requests - View user movie requests  
 • 👥 Manage Admins - Add or remove admins
 • 📢 Manage Channels - Add or remove channels
-• 🗑️ Remove Movie - Delete a movie quickly
 • 📊 Weekly Report - Generate performance reports
+
+🌐 Website Admin Capabilities:
+• 🎭 Add Movies - Upload new content
+• 🗑️ Remove Movies - Delete content
 
 You have full access to all bot features and can manage admins and channels."""
         

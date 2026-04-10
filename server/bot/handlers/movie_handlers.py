@@ -13,7 +13,7 @@ from bot.config import CATEGORIES
 logger = logging.getLogger(__name__)
 
 # Conversation states
-REQUEST_MOVIE_NAME, DELETE_MOVIE_NAME, SHOW_STATS_MOVIE_NAME, SHOW_STATS_OPTION, SHOW_STATS_CATEGORY, SHOW_STATS_ADMIN, SHOW_STATS_MOVIE_LIST = range(7)
+REQUEST_MOVIE_NAME = range(1)
 
 # --- Search Movies ---
 
@@ -293,126 +293,6 @@ async def show_requests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 reply_markup=InlineKeyboardMarkup(button_rows)
             )
 
-# --- Remove Movie (Owner Only) ---
-
-@restricted(allowed_roles=['owner'])
-async def remove_movie_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Start the remove movie conversation."""
-    from bot.utils import set_conversation_keyboard, set_conversation_commands
-    
-    user_role = db.get_user_role(update.effective_user.id)
-    keyboard = await set_conversation_keyboard(update, context, user_role)
-    
-    # Set conversation commands
-    await set_conversation_commands(update, context)
-    
-    await update.message.reply_text(
-        "🗑️ Remove Movie\n\n"
-        "Please enter the name of the movie you want to remove:\n\n"
-        "To cancel, press ❌ Cancel button.",
-        reply_markup=keyboard
-    )
-    return DELETE_MOVIE_NAME
-
-async def get_movie_to_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle movie deletion."""
-    movie_name = update.message.text
-    
-    # Check if user sent /cancel command or pressed cancel button
-    if (movie_name.lower() == '/cancel' or 
-        movie_name.lower() == 'cancel' or
-        movie_name == '❌ Cancel'):
-        from bot.utils import restore_main_keyboard
-        user_role = db.get_user_role(update.effective_user.id)
-        keyboard = await restore_main_keyboard(update, context, user_role)
-        await update.message.reply_text("❌ Movie deletion cancelled.", reply_markup=keyboard)
-        context.user_data.clear()
-        return ConversationHandler.END
-    
-    movies = db.search_movies(movie_name, limit=10)
-    if not movies:
-        await update.message.reply_text(f"❌ No movies found with name '{movie_name}'. Please try again or /cancel.")
-        return DELETE_MOVIE_NAME
-    
-    if len(movies) == 1:
-        # Only one movie found, show confirmation
-        movie = movies[0]
-        context.user_data['movie_to_delete'] = movie
-        
-        keyboard = [
-            [InlineKeyboardButton("✅ Yes, Delete", callback_data="confirm_delete")],
-            [InlineKeyboardButton("❌ Cancel", callback_data="cancel_delete")]
-        ]
-        
-        await update.message.reply_html(
-            f"🗑️ Confirm Deletion\n\n"
-            f"Are you sure you want to delete:\n"
-            f"<b>{movie.get('title', 'Unknown')}</b>\n\n"
-            f"This action cannot be undone!",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return DELETE_MOVIE_NAME
-    else:
-        # Multiple movies found
-        message_text = f"🎬 Found {len(movies)} movies:\n\n"
-        buttons = []
-        
-        for i, movie in enumerate(movies, 1):
-            message_text += f"{i}. {movie.get('title', 'Unknown')}\n"
-            buttons.append([InlineKeyboardButton(f"🗑️ Delete: {movie.get('title', 'Unknown')}", callback_data=f"delete_{movie['movie_id']}")])
-        
-        buttons.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel_delete")])
-        
-        await update.message.reply_html(
-            message_text + "\nSelect the movie you want to delete:",
-            reply_markup=InlineKeyboardMarkup(buttons)
-        )
-        return DELETE_MOVIE_NAME
-
-async def confirm_movie_deletion(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle movie deletion confirmation."""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "cancel_delete":
-        from bot.utils import restore_default_commands
-        await restore_default_commands(context, query.message.chat_id)
-        await query.edit_message_text("❌ Movie deletion cancelled.")
-        return ConversationHandler.END
-    elif query.data == "confirm_delete":
-        movie = context.user_data.get('movie_to_delete')
-        if movie:
-            success = db.delete_movie(movie['movie_id'])
-            if success:
-                await query.edit_message_text(f"✅ Movie '{movie.get('title', 'Unknown')}' has been deleted successfully.")
-            else:
-                await query.edit_message_text("❌ Failed to delete the movie. Please try again.")
-        else:
-            await query.edit_message_text("❌ Error: Movie information not found.")
-        
-        from bot.utils import restore_default_commands
-        await restore_default_commands(context, query.message.chat_id)
-        return ConversationHandler.END
-    elif query.data.startswith("delete_"):
-        movie_id = int(query.data.split("_")[1])
-        movie = db.get_movie_details(movie_id)
-        if movie:
-            success = db.delete_movie(movie_id)
-            if success:
-                await query.edit_message_text(f"✅ Movie '{movie.get('title', 'Unknown')}' has been deleted successfully.")
-            else:
-                await query.edit_message_text("❌ Failed to delete the movie. Please try again.")
-        else:
-            await query.edit_message_text("❌ Error: Movie not found.")
-        
-        from bot.utils import restore_default_commands
-        await restore_default_commands(context, query.message.chat_id)
-        return ConversationHandler.END
-    
-    # Default fallback - should not reach here
-    return ConversationHandler.END
-
-
 
 async def cancel_movie_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancel movie-related conversation."""
@@ -444,28 +324,11 @@ request_movie_conv = ConversationHandler(
     per_message=False
 )
 
-remove_movie_conv = ConversationHandler(
-    entry_points=[
-        CommandHandler("removemovie", remove_movie_start),
-        MessageHandler(filters.Regex("^🗑️ Remove Movie$"), remove_movie_start)
-    ],
-    states={
-        DELETE_MOVIE_NAME: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, get_movie_to_delete),
-            CallbackQueryHandler(confirm_movie_deletion, pattern="^(confirm_delete|cancel_delete|delete_)")
-        ]
-    },
-    fallbacks=[
-        CommandHandler('cancel', cancel_movie_conversation),
-        MessageHandler(filters.Regex("^❌ Cancel$"), cancel_movie_conversation)
-    ]
-)
 
 # Main handler list to be imported
 movie_handlers = [
     # Conversation handlers first
     request_movie_conv,
-    remove_movie_conv,
     # Regular handlers
     MessageHandler(filters.Regex("^🔍 Search Movies$"), search_movies),
     MessageHandler(filters.Regex("^📂 Browse Categories$"), browse_categories),

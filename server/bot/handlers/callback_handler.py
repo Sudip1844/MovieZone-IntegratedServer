@@ -171,11 +171,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             elif parts[1] == 'cancel':
                 await query.edit_message_text("❌ Request viewing cancelled.")
 
-        elif callback_data in ['confirm_delete', 'cancel_delete'] or callback_data.startswith('delete_'):
-            # These callbacks are handled by the remove_movie conversation handler
-            # We should not process them here, let the conversation handler take care of them
-            return
-            
         elif callback_data == 'browse_categories':
             # Handle "Back to Categories" button - Show browse categories
             from bot.config import BROWSE_CATEGORIES

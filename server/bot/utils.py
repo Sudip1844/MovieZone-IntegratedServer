@@ -49,7 +49,7 @@ def get_main_keyboard(user_role: str) -> ReplyKeyboardMarkup:
     if user_role == 'owner':
         # Owner: Review movies (added via website), manage channels, stats
         keyboard = [
-            [KeyboardButton("📋 Review Movies"), KeyboardButton("🗑️ Remove Movie")],
+            [KeyboardButton("📋 Review Movies")],
             [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
             [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
@@ -76,7 +76,7 @@ def get_conversation_keyboard(user_role: str) -> ReplyKeyboardMarkup:
     if user_role == 'owner':
         # Owner: Review movies (added via website), manage channels, stats
         keyboard = [
-            [KeyboardButton("📋 Review Movies"), KeyboardButton("🗑️ Remove Movie")],
+            [KeyboardButton("📋 Review Movies")],
             [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
             [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
@@ -186,14 +186,14 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
     # ── SINGLE ────────────────────────────────────────────────────────────
     if dtype == 'single':
         redirect_url = f"{base_url}/m/{short_id}" if short_id else files.get('Download', '#')
-        download_links = f"Download || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+        download_links = f'Download || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
     # ── QUALITY ───────────────────────────────────────────────────────────
     elif dtype == 'quality':
         qualities = sorted([q for q in files if q not in ('__episodes__',)])
         for q in qualities:
             redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
-            download_links += f"{q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+            download_links += f'{q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
     # ── ZIP ───────────────────────────────────────────────────────────────
     elif dtype == 'zip':
@@ -209,7 +209,7 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
         qualities = sorted([q for q in files if q not in ('__episodes__',)])
         for q in qualities:
             redirect_url = f"{base_url}/m/{short_id}?q={q}" if short_id else files.get(q, '#')
-            download_links += f"{ep_range} || {q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+            download_links += f'{ep_range} || {q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
     # ── EPISODE ───────────────────────────────────────────────────────────
     elif dtype == 'episode':
@@ -247,7 +247,7 @@ def format_movie_post(movie_details: dict, channel_username: str, base_url: str 
                             redirect_url = f"{base_url}/m/{short_id}?ep={ep_num}&q={q}"
                         else:
                             redirect_url = raw_url
-                        ep_links += f"{ep_label} || {q} || 👉 <a href='{redirect_url}'>Click To Download</a> 📥\n"
+                        ep_links += f'{ep_label} || {q} || 👉 <a href="{redirect_url}">Click To Download</a> 📥\n'
 
                 if ep_links:
                     download_links += ep_links + "\n"
