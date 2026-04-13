@@ -174,49 +174,105 @@ async def handle_review_callback(update: Update, context: ContextTypes.DEFAULT_T
                     post_text = format_movie_post(movie, CHANNEL_USERNAME or "yourchannel")
                     thumbnail = movie.get('thumbnail_file_id')
 
+                    # ──────────────────────────────────────────────────
+                    # STEP 1: Send a clean "Master Post" to DUMP_CHAT
+                    # This gives us a stable message_id that:
+                    #   - Looks clean (no "APPROVED" admin text)
+                    #   - Can be copy_message'd to channels without re-upload
+                    #   - Can be forwarded to users on search
+                    # ──────────────────────────────────────────────────
+                    master_message_id = None
+                    try:
+                        if thumbnail:
+                            master_msg = await context.bot.send_photo(
+                                chat_id=DUMP_CHAT_ID,
+                                photo=thumbnail,
+                                caption=post_text,
+                                parse_mode='HTML'
+                            )
+                        else:
+                            master_msg = await context.bot.send_message(
+                                chat_id=DUMP_CHAT_ID,
+                                text=post_text,
+                                parse_mode='HTML'
+                            )
+                        master_message_id = master_msg.message_id
+                        # Save the master post ID to database
+                        db.update_telegram_message_id(movie_id, master_message_id)
+                        logger.info(f"Master post created: message_id={master_message_id} for movie '{title}'")
+                    except Exception as e:
+                        logger.error(f"Failed to create master post in DUMP_CHAT: {e}")
+
+                    # ──────────────────────────────────────────────────
+                    # STEP 2: Copy master post to all connected channels
+                    # Using copy_message is faster and avoids re-uploading
+                    # ──────────────────────────────────────────────────
                     channels = db.get_all_channels()
                     posted_count = 0
                     failed_channels = []
                     if channels:
                         for channel in channels:
-                            channel_id = channel.get('channel_id')
+                            channel_id = str(channel.get('channel_id', '')).strip()
+                            # Auto-fix IDs missing the negative sign (channels start with -100)
+                            if channel_id.startswith('100') and len(channel_id) >= 13:
+                                channel_id = f"-{channel_id}"
                             if not channel_id:
                                 continue
                             if str(channel_id) == str(DUMP_CHAT_ID):
                                 continue
                             # Detect invite links — bot cannot post to invite links
-                            # Invite links look like: @+abc123, https://t.me/+abc123, +abc123
                             ch_str = str(channel_id).strip()
                             if '+' in ch_str and not ch_str.lstrip('-').isdigit():
-                                logger.error(f"⚠️ Channel '{ch_str}' is an INVITE LINK, not a channel ID! Use @username or numeric ID like -1001234567890")
-                                failed_channels.append(f"{ch_str} (invite link — use @username or numeric ID)")
+                                logger.error(f"⚠️ Channel '{ch_str}' is an INVITE LINK — use @username or numeric ID")
+                                failed_channels.append(f"{ch_str} (invite link)")
                                 continue
                             try:
-                                if thumbnail:
-                                    await context.bot.send_photo(
-                                        chat_id=channel_id,
-                                        photo=thumbnail,
-                                        caption=post_text,
-                                        parse_mode='HTML'
-                                    )
-                                else:
-                                    await context.bot.send_message(
-                                        chat_id=channel_id,
-                                        text=post_text,
-                                        parse_mode='HTML'
-                                    )
-                                posted_count += 1
-                                logger.info(f"Movie posted to channel: {title} on {channel_id}")
+                                success = False
+                                if master_message_id:
+                                    try:
+                                        # Use copy_message: no re-upload, instant, clean
+                                        await context.bot.copy_message(
+                                            chat_id=channel_id,
+                                            from_chat_id=DUMP_CHAT_ID,
+                                            message_id=master_message_id
+                                        )
+                                        success = True
+                                        posted_count += 1
+                                        logger.info(f"Movie posted to channel: {title} → {channel_id}")
+                                    except Exception as copy_err:
+                                        logger.warning(f"copy_message failed: {copy_err}. Attempting fallback...")
+                                
+                                if not success:
+                                    if thumbnail:
+                                        # Fallback if master post failed
+                                        await context.bot.send_photo(
+                                            chat_id=channel_id,
+                                            photo=thumbnail,
+                                            caption=post_text,
+                                            parse_mode='HTML'
+                                        )
+                                    else:
+                                        await context.bot.send_message(
+                                            chat_id=channel_id,
+                                            text=post_text,
+                                            parse_mode='HTML'
+                                        )
+                                    posted_count += 1
+                                    logger.info(f"Movie posted (fallback) to channel: {title} → {channel_id}")
                             except Exception as e:
                                 logger.error(f"Failed to post to channel {channel_id}: {e}")
                                 failed_channels.append(f"{channel_id} ({str(e)[:50]})")
+
                     db.mark_movie_as_posted(movie_id)
-                    # Update the message with final status
+                    # Update the review message with final status
+                    status_text = f"✅ POSTED: {title}\n\nPosted to {posted_count} channel(s)!"
+                    if failed_channels:
+                        status_text += f"\n⚠️ Failed: {len(failed_channels)} channel(s)"
                     try:
                         if query.message.photo:
-                            await query.edit_message_caption(caption=f"✅ POSTED: {title}\n\nPosted to {posted_count} channel(s)!")
+                            await query.edit_message_caption(caption=status_text)
                         else:
-                            await query.edit_message_text(f"✅ POSTED: {title}\n\nPosted to {posted_count} channel(s)!")
+                            await query.edit_message_text(status_text)
                     except Exception:
                         pass
                 except Exception as e:
@@ -296,7 +352,6 @@ def build_application():
     )
     from bot.handlers.callback_handler import callback_query_handler
     from bot.handlers.owner_handlers import owner_handlers
-    from bot.handlers.weekly_handler import weekly_handlers
     
     # Check Manage Admins function from owner handler directly
     from bot.handlers.owner_handlers import manage_admins
@@ -305,10 +360,6 @@ def build_application():
 
     # 1. Owner-specific handlers (highest priority)
     for handler in owner_handlers:
-        application.add_handler(handler)
-
-    # 1.1. Weekly report handlers (owner only)
-    for handler in weekly_handlers:
         application.add_handler(handler)
 
     # 2. Movie request conversation handlers
@@ -327,13 +378,6 @@ def build_application():
     application.add_handler(MessageHandler(filters.Regex("^📊 Show Requests$"), show_requests))
     application.add_handler(MessageHandler(filters.Regex("^👥 Manage Admins$"), manage_admins))
 
-    # 3.2 Weekly Report text button handler
-    async def weekly_report_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle '📊 Weekly Report' keyboard button."""
-        from bot.handlers.weekly_handler import show_weekly_report
-        await show_weekly_report(update, context)
-    application.add_handler(MessageHandler(filters.Regex("^📊 Weekly Report$"), weekly_report_button))
-
     # 4. Regular command and message handlers from start_handler
     for handler in start_handlers:
         application.add_handler(handler)
@@ -348,7 +392,7 @@ def build_application():
         & ~filters.Regex("^🔍 Search Movies$") & ~filters.Regex("^📂 Browse Categories$")
         & ~filters.Regex("^🙏 Request Movie$") & ~filters.Regex("^📊 Show Requests$")
         & ~filters.Regex("^👥 Manage Admins$") & ~filters.Regex("^📋 Review Movies$")
-        & ~filters.Regex("^📊 Weekly Report$") & ~filters.Regex("^🗑️ Remove Movie$")
+        & ~filters.Regex("^🗑️ Remove Movie$")
         & ~filters.Regex("^📢 Manage Channels$"),
         handle_search_query
     ))

@@ -4,9 +4,9 @@ const API = '';
 
 const CATEGORIES = [
     "Bollywood 🇮🇳", "Hollywood 🇺🇸", "South Indian 🎬", "Web Series 🎥",
-    "Bengali ✨", "Anime & cartoon 🌀", "Comedy 🤣", "Action 💥",
+    "Bengali ✨", "Anime 🎌", "Cartoon 🎭", "Comedy 🤣", "Action 💥",
     "Romance 💑", "Horror 😱", "Thriller 🔍", "Sci-Fi 🛸",
-    "K-Drama 🎎", "18+ 🔞", "Mystery 😲", "Crime 🚔",
+    "K-Drama 🎎", "18+ 🔞", "Hentai 🔞", "Mystery 😲", "Crime 🚔",
     "Fantasy 🧿", "Adventure 🗺️", "Documentary 📚", "Drama 🎭"
 ];
 const LANGUAGES = ["Bengali","Hindi","English","Tamil","Telugu","Korean","Gujarati","Malayalam","Chinese","Punjabi","Marathi"];
@@ -416,7 +416,7 @@ function filterMovies() {
     else if (sort === 'name_desc') f.sort((a,b)=>(b.title||'').localeCompare(a.title||''));
 
     const tbody = document.getElementById('moviesTable');
-    if (!f.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">No movies found</td></tr>'; return; }
+    if (!f.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)">No movies found</td></tr>'; return; }
     tbody.innerHTML = f.map((m, idx) => {
         let urlDisplayHtml = '—';
         if (m.short_id) {
@@ -470,6 +470,14 @@ function filterMovies() {
 
         const addedBy = m.added_by || 'owner';
         const adsEnabled = m.ads_enabled !== false;
+        const tgMsgId = m.telegram_message_id;
+        const repostBtnHtml = tgMsgId 
+            ? `<button class="btn btn-sm btn-repost" onclick="repostMovie(${m.id})" title="Repost to all channels">🔁 Repost</button>` 
+            : ``;
+        const tgMsgHtml = tgMsgId
+            ? `<div class="tg-post-id"><span class="tg-msg-id" title="Telegram Master Post ID">#${tgMsgId}</span> <button class="copy-icon" onclick="copyUrl('${tgMsgId}')" title="Copy ID">📋</button></div>`
+            : ``;
+
         return `<tr>
             <td>${idx + 1}</td>
             <td><strong>${esc(m.title||'')}</strong></td>
@@ -486,7 +494,9 @@ function filterMovies() {
             </td>
             <td><div class="actions">
                 <button class="btn btn-sm btn-outline" onclick="openEdit(${m.id})">✏️</button>
+                ${repostBtnHtml}
                 <button class="btn btn-sm btn-danger" onclick="deleteMovie(${m.id})">🗑️</button>
+                ${tgMsgHtml}
             </div></td>
         </tr>`;
     }).join('');
@@ -590,6 +600,22 @@ async function toggleMovieAds(id, adsEnabled) {
         showToast(adsEnabled ? 'Ads Enabled' : 'Ads Disabled');
         loadMovies();
     } catch(e) { showToast('Failed', 'error'); }
+}
+
+async function repostMovie(id) {
+    const m = allMovies.find(x => x.id === id);
+    const title = m ? m.title : `Movie #${id}`;
+    if (!confirm(`Repost "${title}" to ALL currently linked channels?\n\nThis will send the movie post to every channel right now.`)) return;
+    try {
+        showToast('Reposting...', 'success');
+        const r = await fetch(API+`/api/movies/${id}/repost`, { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+            showToast(d.message || `Reposted to ${d.posted_to} channel(s)!`);
+        } else {
+            showToast('Repost failed: ' + (d.error || 'Unknown error'), 'error');
+        }
+    } catch(e) { showToast('Repost failed', 'error'); }
 }
 
 // PENDING - with details popup

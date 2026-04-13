@@ -448,76 +448,7 @@ def get_movies_by_uploader(admin_id: int, limit: int = 30) -> List[Dict]:
     return [_format_movie_for_bot(m) for m in rows]
 
 
-# --- Weekly Statistics Functions ---
 
-def generate_weekly_report() -> str:
-    """Generate weekly report for owner based on past 7 days data."""
-    try:
-        from bot.config import OWNER_ID
-        
-        # Calculate date limits for past 7 days
-        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%dT00:00:00')
-        report_title = f"Weekly Report (Past 7 Days)\n\n"
-        report = report_title
-
-        # Get all movies added in past 7 days that are posted to channels
-        recent_movies = supabase.select(
-            'movies', '*',
-            {'created_at': f'gte.{seven_days_ago}', 'is_posted': 'eq.true'},
-            order='created_at.desc'
-        )
-
-        if not recent_movies:
-            return report + "No activity recorded for the past 7 days."
-
-        # Group by uploader
-        uploaders = {}
-        for movie in recent_movies:
-            uploader_id = movie.get('added_by', 'unknown')
-            if uploader_id not in uploaders:
-                uploaders[uploader_id] = []
-            uploaders[uploader_id].append(movie)
-
-        total_movies = 0
-        total_downloads = 0
-
-        for uploader_id, movies in uploaders.items():
-            try:
-                uid = int(uploader_id)
-            except (ValueError, TypeError):
-                uid = 0
-
-            if uid == OWNER_ID:
-                name = "Owner"
-                role = "Owner"
-            else:
-                admin_info = get_admin_info(uid)
-                name = admin_info.get('short_name', f'Admin-{uploader_id}') if admin_info else f'User-{uploader_id}'
-                role = "Admin"
-
-            report += f">> {name} ({role})\n"
-            report += f"  Movies Uploaded: {len(movies)}\n"
-
-            movie_titles = [m.get('title', 'Unknown') for m in movies]
-            report += f"  Added: {', '.join(movie_titles)}\n"
-
-            # Downloads for these movies
-            user_total_dl = sum(m.get('downloads', 0) for m in movies)
-            report += f"  Downloads (these 7 days added movies): {user_total_dl}\n"
-            report += "\n" + "-" * 40 + "\n\n"
-            
-            total_movies += len(movies)
-            total_downloads += user_total_dl
-
-        # Summary stats
-        report += f"Summary (Past 7 Days):\n"
-        report += f"  Total Movies Added: {total_movies}\n"
-
-        return report
-
-    except Exception as e:
-        logger.error(f"Error generating weekly report: {e}")
-        return f"Error generating weekly report: {str(e)}"
 
 def get_pending_movies() -> List[Dict]:
     """Get all movies with status 'approved' (approved from website, waiting for bot review to post to channels)."""
@@ -557,3 +488,32 @@ def mark_movie_as_posted(movie_id: int) -> bool:
     except Exception as e:
         logger.error(f"Error marking movie as posted {movie_id}: {e}")
         return False
+
+
+def update_telegram_message_id(movie_id: int, message_id: int) -> bool:
+    """Save the Telegram message_id of the master post (sent to DUMP_CHAT) for a movie.
+    
+    This master post ID is used to:
+    1. Copy the post to channels (avoids re-uploading thumbnail).
+    2. Quickly forward to users during searches.
+    3. Manual repost from Owner Panel.
+    """
+    try:
+        supabase.update('movies', {'telegram_message_id': message_id}, {'id': movie_id})
+        logger.info(f"Saved telegram_message_id={message_id} for movie {movie_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving telegram_message_id for movie {movie_id}: {e}")
+        return False
+
+
+def get_telegram_message_id(movie_id: int) -> Optional[int]:
+    """Get the saved Telegram master post message_id for a movie."""
+    try:
+        rows = supabase.select('movies', 'telegram_message_id', {'id': movie_id})
+        if rows and rows[0].get('telegram_message_id'):
+            return int(rows[0]['telegram_message_id'])
+        return None
+    except Exception as e:
+        logger.error(f"Error fetching telegram_message_id for movie {movie_id}: {e}")
+        return None

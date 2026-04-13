@@ -4,9 +4,9 @@ let currentAdminName = '';
 
 const CATEGORIES = [
     "Bollywood 🇮🇳", "Hollywood 🇺🇸", "South Indian 🎬", "Web Series 🎥",
-    "Bengali ✨", "Anime & cartoon 🌀", "Comedy 🤣", "Action 💥",
+    "Bengali ✨", "Anime 🎌", "Cartoon 🎭", "Comedy 🤣", "Action 💥",
     "Romance 💑", "Horror 😱", "Thriller 🔍", "Sci-Fi 🛸",
-    "K-Drama 🎎", "18+ 🔞", "Mystery 😲", "Crime 🚔",
+    "K-Drama 🎎", "18+ 🔞", "Hentai 🔞", "Mystery 😲", "Crime 🚔",
     "Fantasy 🧿", "Adventure 🗺️", "Documentary 📚", "Drama 🎭"
 ];
 const LANGUAGES = ["Bengali","Hindi","English","Tamil","Telugu","Korean","Gujarati","Malayalam","Chinese","Punjabi","Marathi"];

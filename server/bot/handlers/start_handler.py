@@ -183,7 +183,6 @@ Available Features:
 • 📊 Show Requests - View user movie requests  
 • 👥 Manage Admins - Add or remove admins
 • 📢 Manage Channels - Add or remove channels
-• 📊 Weekly Report - Generate performance reports
 
 🌐 Website Admin Capabilities:
 • 🎭 Add Movies - Upload new content

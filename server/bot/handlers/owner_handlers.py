@@ -273,8 +273,10 @@ async def get_channel_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         channel_username = channel_input.lstrip('@')
     # Accept numeric ID (channel IDs are negative like -1001234567890)
     elif channel_input.lstrip('-').isdigit():
-        channel_id = channel_input  # e.g. -1001234567890
-        channel_username = channel_input
+        channel_id = str(channel_input)  # e.g. -1001234567890
+        if channel_id.startswith('100') and len(channel_id) >= 13:
+            channel_id = f"-{channel_id}"
+        channel_username = channel_id
     else:
         await update.message.reply_text(
             "❌ Invalid format.\n\n"
@@ -552,7 +554,7 @@ remove_admin_conv = ConversationHandler(
         CommandHandler('cancel', cancel_admin_conversation),
         MessageHandler(filters.Regex("^❌ Cancel$"), cancel_admin_conversation)
     ],
-    per_message=True
+    per_message=False
 )
 
 add_channel_conv = ConversationHandler(
@@ -586,7 +588,7 @@ remove_channel_conv = ConversationHandler(
         CommandHandler('cancel', cancel_channel_conversation),
         MessageHandler(filters.Regex("^❌ Cancel$"), cancel_channel_conversation)
     ],
-    per_message=True
+    per_message=False
 )
 
 

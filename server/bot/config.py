@@ -24,18 +24,18 @@ DUMP_CHAT_ID = os.getenv('DUMP_CHAT_ID', os.getenv('OWNER_ID', '5379553841'))
 # Categories for movie addition (used by website now, kept for reference)
 ADMIN_CATEGORIES = [
     "Bollywood 🇮🇳", "Hollywood 🇺🇸", "South Indian 🎬", "Web Series 🎥",
-    "Bengali ✨", "Anime & cartoon 🌀", "Comedy 🤣", "Action 💥",
+    "Bengali ✨", "Anime 🎌", "Cartoon 🎭", "Comedy 🤣", "Action 💥",
     "Romance 💑", "Horror 😱", "Thriller 🔍", "Sci-Fi 🛸",
-    "K-Drama 🎎", "18+ 🔞", "Mystery 😲", "Marathi Movie 💟",
+    "K-Drama 🎎", "18+ 🔞", "Hentai 🔞", "Mystery 😲", "Marathi Movie 💟",
     "Punjabi Movie 🌠", "Gujarati Movie 🌄", "Crime 🚔", "Fantasy 🧿",
     "Adventure 🗺️", "Documentary 📚", "Drama 🎭"
 ]
 
 BROWSE_CATEGORIES = [
     "All 🌐", "Bollywood 🇮🇳", "Hollywood 🇺🇸", "South Indian 🎬", "Web Series 🎥",
-    "Bengali ✨", "Anime & cartoon 🌀", "Comedy 🤣", "Action 💥",
+    "Bengali ✨", "Anime 🎌", "Cartoon 🎭", "Comedy 🤣", "Action 💥",
     "Romance 💑", "Horror 😱", "Thriller 🔍", "Sci-Fi 🛸",
-    "K-Drama 🎎", "18+ 🔞", "Mystery 😲", "Marathi Movie 💟",
+    "K-Drama 🎎", "18+ 🔞", "Hentai 🔞", "Mystery 😲", "Marathi Movie 💟",
     "Punjabi Movie 🌠", "Gujarati Movie 🌄", "Crime 🚔", "Fantasy 🧿",
     "Adventure 🗺️", "Documentary 📚", "Drama 🎭"
 ]

@@ -238,3 +238,110 @@ def reject_movie(movie_id):
         return jsonify({'success': True, 'message': 'Movie rejected'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@movie_bp.route('/api/movies/<int:movie_id>/repost', methods=['POST'])
+def repost_movie(movie_id):
+    """Manually repost a movie to all currently linked channels.
+    
+    Uses the saved telegram_message_id (master post in DUMP_CHAT) to 
+    copy_message to all channels — fast, no re-upload needed.
+    Falls back to rebuilding and sending the post if no master ID exists.
+    """
+    try:
+        from bot.config import BOT_TOKEN, CHANNEL_USERNAME, DUMP_CHAT_ID
+        import requests as http_requests
+
+        # Get movie details
+        rows = supabase.select('movies', '*', {'id': movie_id})
+        if not rows:
+            return jsonify({'error': 'Movie not found'}), 404
+        movie = rows[0]
+
+        # Get all channels
+        channels = supabase.select('channels', '*')
+        if not channels:
+            return jsonify({'error': 'No channels configured'}), 400
+
+        master_message_id = movie.get('telegram_message_id')
+        dump_chat = str(DUMP_CHAT_ID)
+        posted_count = 0
+        failed = []
+
+        for channel in channels:
+            channel_id = str(channel.get('channel_id', '')).strip()
+            # Auto-fix IDs missing the negative sign (channels start with -100)
+            if channel_id.startswith('100') and len(channel_id) >= 13:
+                channel_id = f"-{channel_id}"
+                
+            if not channel_id or channel_id == dump_chat:
+                continue
+            # Skip invite links
+            if '+' in channel_id and not channel_id.lstrip('-').isdigit():
+                failed.append(f"{channel_id} (invite link)")
+                continue
+
+            try:
+                success = False
+                error_desc = "unknown"
+                if master_message_id:
+                    # Use copyMessage API — instant, no re-upload
+                    resp = http_requests.post(
+                        f"https://api.telegram.org/bot{BOT_TOKEN}/copyMessage",
+                        json={
+                            'chat_id': channel_id,
+                            'from_chat_id': dump_chat,
+                            'message_id': int(master_message_id)
+                        },
+                        timeout=15
+                    )
+                    if resp.json().get('ok'):
+                        posted_count += 1
+                        success = True
+                    else:
+                        error_desc = resp.json().get('description', 'copyMessage failed')
+
+                if not success:
+                    # Fallback: rebuild post text and send
+                    title = movie.get('title', 'Unknown')
+                    thumbnail = movie.get('thumbnail_file_id', '')
+                    # Simple fallback post
+                    from bot.utils import format_movie_post
+                    from bot.db import _format_movie_for_bot
+                    fmt_movie = _format_movie_for_bot(movie)
+                    post_text = format_movie_post(fmt_movie, CHANNEL_USERNAME or 'yourchannel')
+
+                    if thumbnail:
+                        resp = http_requests.post(
+                            f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
+                            json={'chat_id': channel_id, 'photo': thumbnail, 'caption': post_text, 'parse_mode': 'HTML'},
+                            timeout=15
+                        )
+                    else:
+                        resp = http_requests.post(
+                            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                            json={'chat_id': channel_id, 'text': post_text, 'parse_mode': 'HTML'},
+                            timeout=15
+                        )
+                    if resp.json().get('ok'):
+                        posted_count += 1
+                        success = True
+                    else:
+                        error_desc = resp.json().get('description', error_desc)
+                
+                if not success:
+                    failed.append(f"{channel_id} ({error_desc})")
+                    
+            except Exception as e:
+                failed.append(f"{channel_id} ({str(e)[:60]})")
+
+        return jsonify({
+            'success': True,
+            'posted_to': posted_count,
+            'failed': failed,
+            'used_master_id': bool(master_message_id),
+            'message': f"Reposted to {posted_count} channel(s)!" + (f" Failed: {len(failed)}" if failed else "")
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

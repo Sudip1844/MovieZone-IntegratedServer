@@ -47,21 +47,20 @@ def get_main_keyboard(user_role: str) -> ReplyKeyboardMarkup:
     """Create role-based main menu keyboard for users with cancel button always available."""
     
     if user_role == 'owner':
-        # Owner: Review movies (added via website), manage channels, stats
+        # Owner: Review movies, manage channels, stats (6 buttons -> 2 per row)
         keyboard = [
-            [KeyboardButton("📋 Review Movies")],
-            [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
-            [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
+            [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
+            [KeyboardButton("👥 Manage Admins"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
-        # Admin: stats, requests (movies added via website, admins managed via website)
+        # Admin: stats, requests (3 buttons -> 2 in first row, 1 in second)
         keyboard = [
-            [KeyboardButton("📊 Show Requests")],
-            [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
+            [KeyboardButton("📊 Show Requests"), KeyboardButton("❓ Help")],
+            [KeyboardButton("❌ Cancel")]
         ]
     else:
-        # Regular users get basic commands plus cancel
+        # Regular users get basic commands plus cancel (5 buttons -> 2 per row)
         keyboard = [
             [KeyboardButton("🔍 Search Movies"), KeyboardButton("📂 Browse Categories")],
             [KeyboardButton("🙏 Request Movie"), KeyboardButton("❓ Help")],
@@ -74,21 +73,20 @@ def get_conversation_keyboard(user_role: str) -> ReplyKeyboardMarkup:
     """Create keyboard with cancel button during conversations, alongside main buttons."""
     
     if user_role == 'owner':
-        # Owner: Review movies (added via website), manage channels, stats
+        # Owner: Review movies, manage channels, stats (6 buttons -> 2 per row)
         keyboard = [
-            [KeyboardButton("📋 Review Movies")],
-            [KeyboardButton("📊 Show Requests"), KeyboardButton("👥 Manage Admins")],
-            [KeyboardButton("📊 Weekly Report"), KeyboardButton("📢 Manage Channels")],
+            [KeyboardButton("📋 Review Movies"), KeyboardButton("📊 Show Requests")],
+            [KeyboardButton("👥 Manage Admins"), KeyboardButton("📢 Manage Channels")],
             [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
         ]
     elif user_role == 'admin':
-        # Admin: stats, requests (movies added via website, admins managed via website)
+        # Admin: stats, requests (3 buttons -> 2 in first row, 1 in second)
         keyboard = [
-            [KeyboardButton("📊 Show Requests")],
-            [KeyboardButton("❓ Help"), KeyboardButton("❌ Cancel")]
+            [KeyboardButton("📊 Show Requests"), KeyboardButton("❓ Help")],
+            [KeyboardButton("❌ Cancel")]
         ]
     else:
-        # Regular users get basic commands plus cancel
+        # Regular users get basic commands plus cancel (5 buttons -> 2 per row)
         keyboard = [
             [KeyboardButton("🔍 Search Movies"), KeyboardButton("📂 Browse Categories")],
             [KeyboardButton("🙏 Request Movie"), KeyboardButton("❓ Help")],

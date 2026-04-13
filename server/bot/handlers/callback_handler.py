@@ -113,6 +113,22 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
                 await query.edit_message_text("❌ Error: Movie not found.")
                 return
 
+            master_msg_id = movie_details.get('telegram_message_id')
+            if master_msg_id:
+                from bot.config import DUMP_CHAT_ID
+                try:
+                    await context.bot.copy_message(
+                        chat_id=query.message.chat_id,
+                        from_chat_id=DUMP_CHAT_ID,
+                        message_id=int(master_msg_id)
+                    )
+                    await query.delete_message()
+                    return
+                except Exception as e:
+                    logger.error(f"Optimized search (copy_message) failed for {movie_id}: {e}")
+                    # Fallback to standard rendering if copy fails
+
+
             # Build response with Title: prefix and no Description field
             response_text = f"🎬 Title: {movie_details.get('title', 'N/A')}\n\n"
             
