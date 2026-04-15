@@ -8,38 +8,37 @@
   publish = "."
 
 # Redirect all API calls to Render backend
-# ⬇️ Replace YOUR_RENDER_SERVICE with your actual Render URL after deployment
 [[redirects]]
   from = "/api/*"
-  to = "https://YOUR_RENDER_SERVICE.onrender.com/api/:splat"
+  to = "https://moviezone-integratedserver.onrender.com/api/:splat"
   status = 200
   force = true
 
 # Redirect /sudip (owner panel) to backend-served page
 [[redirects]]
   from = "/sudip"
-  to = "https://YOUR_RENDER_SERVICE.onrender.com/sudip"
+  to = "https://moviezone-integratedserver.onrender.com/sudip"
   status = 200
   force = true
 
 # Redirect /admin to backend-served page
 [[redirects]]
   from = "/admin"
-  to = "https://YOUR_RENDER_SERVICE.onrender.com/admin"
+  to = "https://moviezone-integratedserver.onrender.com/admin"
   status = 200
   force = true
 
 # Redirect /m/<short_id> to backend for movie shortlinks
 [[redirects]]
   from = "/m/*"
-  to = "https://YOUR_RENDER_SERVICE.onrender.com/m/:splat"
+  to = "https://moviezone-integratedserver.onrender.com/m/:splat"
   status = 200
   force = true
 
 # Redirect /ad_page.html to backend
 [[redirects]]
   from = "/ad_page.html"
-  to = "https://YOUR_RENDER_SERVICE.onrender.com/ad_page.html"
+  to = "https://moviezone-integratedserver.onrender.com/ad_page.html"
   status = 200
   force = true
 
