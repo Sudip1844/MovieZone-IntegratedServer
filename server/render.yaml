@@ -1,0 +1,38 @@
+# render.yaml — Render deployment configuration for MovieZone Backend
+# Docs: https://render.com/docs/blueprint-spec
+# Location: server/render.yaml
+# Render will detect this file automatically when server/ is the repo root
+
+services:
+  - type: web
+    name: moviezone-server
+    env: python
+    region: singapore  # closest to India
+    plan: free
+
+    # Build settings
+    # rootDir is NOT needed here — this file is already inside server/
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+
+    # Health check
+    healthCheckPath: /api/health
+
+    # Environment variables — set these in Render Dashboard
+    # (copy values from server.env)
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_HOST
+        value: 0.0.0.0
+      - key: FLASK_PORT
+        value: 10000
+      - key: DEBUG
+        value: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      # ⬇️ Set these as SECRET values in Render Dashboard:
+      # BOT_TOKEN, SECRET_KEY, OWNER_ID, DUMP_CHAT_ID,
+      # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY,
+      # SUPABASE_DB_HOST, SUPABASE_DB_PASSWORD,
+      # WEBSITE_BASE_URL, ALLOWED_ORIGINS, CHANNEL_USERNAME, BOT_USERNAME

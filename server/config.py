@@ -15,7 +15,7 @@ load_dotenv(env_path)
 # ============================================
 
 # CORS
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:5000').split(',')
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*').split(',')
 
 class Config:
     """Base configuration"""

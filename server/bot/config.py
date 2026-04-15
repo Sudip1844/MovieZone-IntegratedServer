@@ -14,7 +14,7 @@ CHANNEL_USERNAME = os.getenv('CHANNEL_USERNAME', 'moviezone969')
 
 # --- Website Base URL (used for generating /m/<short_id> redirect links in posts) ---
 # Change this to your ngrok/production URL when deploying
-WEBSITE_BASE_URL = os.getenv('WEBSITE_BASE_URL', 'http://localhost:5000')
+WEBSITE_BASE_URL = os.getenv('WEBSITE_BASE_URL', '')
 
 # --- Owner Configuration ---
 OWNER_ID = int(os.getenv('OWNER_ID', '5379553841'))
