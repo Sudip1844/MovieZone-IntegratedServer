@@ -9,7 +9,7 @@
 
         fetch('/api/movie-links').then(r=>r.json()).then(movies=>{
             if(Array.isArray(movies)){
-                const approved=movies.filter(m=>m.status==='approved');
+                const approved=movies.filter(m=>m.status==='approved'||m.status==='posted');
                 document.getElementById('totalMovies').textContent=approved.length;
                 document.getElementById('totalViews').textContent=movies.reduce((s,m)=>s+(m.views||0),0);
             }

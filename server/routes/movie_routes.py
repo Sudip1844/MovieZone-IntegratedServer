@@ -22,7 +22,10 @@ def get_movie_links():
         if show_all:
             movies = supabase.select('movies', '*', order='created_at.desc')
         else:
-            movies = supabase.select('movies', '*', {'status': 'approved'}, order='created_at.desc')
+            # Show both 'approved' and 'posted' movies publicly
+            # 'approved' = ready for channel, 'posted' = already published to channel
+            all_movies = supabase.select('movies', '*', order='created_at.desc')
+            movies = [m for m in all_movies if m.get('status') in ('approved', 'posted')]
         return jsonify(movies)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
