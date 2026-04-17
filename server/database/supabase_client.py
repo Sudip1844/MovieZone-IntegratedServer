@@ -42,7 +42,7 @@ class SupabaseClient:
             url = f"{self.base_url}/{table}?select={columns}"
             if where:
                 for key, value in where.items():
-                    if isinstance(value, str) and value.startswith(('eq.', 'neq.', 'gt.', 'lt.', 'gte.', 'lte.', 'like.', 'ilike.')):
+                    if isinstance(value, str) and value.startswith(('eq.', 'neq.', 'gt.', 'lt.', 'gte.', 'lte.', 'like.', 'ilike.', 'cs.', 'cd.')):
                         url += f"&{key}={value}"
                     else:
                         url += f"&{key}=eq.{value}"
