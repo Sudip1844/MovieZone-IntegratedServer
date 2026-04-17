@@ -269,7 +269,7 @@ def search_movies(query: str, limit: int = 10) -> List[Dict]:
     """Search movies by title (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.%{query}%', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
+        {'title': f'ilike.%{query}%', 'status': 'posted'},
         order='created_at.desc',
         limit=limit
     )
@@ -280,7 +280,7 @@ def get_movies_by_first_letter(letter: str, limit: int = 30) -> List[Dict]:
     """Get movies that start with a specific letter (only active, approved)."""
     rows = supabase.select(
         'movies', '*',
-        {'title': f'ilike.{letter}%', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
+        {'title': f'ilike.{letter}%', 'status': 'posted'},
         order='title.asc',
         limit=limit
     )
@@ -293,7 +293,7 @@ def get_movies_by_category(category: str, limit: int = 10, offset: int = 0) -> L
     clean_cat = category.split(' ')[0] if ' ' in category else category
     rows = supabase.select(
         'movies', '*',
-        {'categories': f'cs.{{{clean_cat}}}', 'status': 'approved', 'is_active': 'eq.true', 'is_posted': 'eq.true'},
+        {'categories': f'cs.{{{clean_cat}}}', 'status': 'posted'},
         order='created_at.desc',
         limit=limit
     )

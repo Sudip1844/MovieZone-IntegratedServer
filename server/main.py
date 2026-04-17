@@ -42,11 +42,13 @@ def run_flask():
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5000))
 
-    logger.info(f"[WEB] Flask server on http://localhost:{port}")
-    logger.info(f"  Home: http://localhost:{port}")
-    logger.info(f"  Owner: http://localhost:{port}/sudip")
-    logger.info(f"  Admin: http://localhost:{port}/admin")
-    logger.info(f"  API: http://localhost:{port}/api/health")
+    website_url = os.getenv('WEBSITE_BASE_URL', f'http://localhost:{port}')
+    
+    logger.info(f"[WEB] Flask server bound to port {port}")
+    logger.info(f"  Home: {website_url}")
+    logger.info(f"  Owner: {website_url}/sudip")
+    logger.info(f"  Admin: {website_url}/admin")
+    logger.info(f"  API: {website_url}/api/health")
 
     app.run(host=host, port=port, debug=False, use_reloader=False)
 
