@@ -289,11 +289,10 @@ def get_movies_by_first_letter(letter: str, limit: int = 30) -> List[Dict]:
 
 def get_movies_by_category(category: str, limit: int = 10, offset: int = 0) -> List[Dict]:
     """Get movies by category (only active, approved)."""
-    # Supabase array contains: use cs operator
-    clean_cat = category.split(' ')[0] if ' ' in category else category
+    # Use exact category string including emojis since it's saved with emojis
     rows = supabase.select(
         'movies', '*',
-        {'categories': f'cs.{{{clean_cat}}}', 'status': 'posted'},
+        {'categories': f'cs.{{{category}}}', 'status': 'posted'},
         order='created_at.desc',
         limit=limit
     )
